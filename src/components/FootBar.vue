@@ -3,8 +3,11 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { usePlayerStore } from '../stores/player.js'
 import { Howl } from 'howler'
 
-const player = usePlayerStore()
+// ========== 状态 ==========
+let currentBlobUrl = null
 let howl = null
+
+const player = usePlayerStore()
 
 // ========== 监听外部播放事件 ==========
 function handlePlayTrackEvent(e) {
@@ -34,8 +37,24 @@ async function playTrack(track, playlist = [], index = -1) {
   stopCurrent()
   player.setTrack(track, playlist, index)
 
+  // 通过 Electron IPC 读取文件为 Blob，绕过 file:// 限制
+  let audioBlob
+  try {
+    audioBlob = await window.electronAPI.readFileAsBlob(track.path)
+  } catch (err) {
+    console.error('读取音频文件失败:', err)
+    player.setPlaying(false)
+    return
+  }
+
+  currentBlobUrl = URL.createObjectURL(audioBlob)
+
+  // 读取真实的后缀名
+  const fileExtension = track.path.split('.').pop().toLowerCase()
+
   howl = new Howl({
-    src: [`file://${track.path}`],
+    src: [currentBlobUrl],
+    format: [fileExtension],
     html5: true,
     volume: player.isMuted ? 0 : player.volume,
     onplay: () => {
@@ -78,6 +97,10 @@ function stopCurrent() {
   if (howl) {
     howl.unload()
     howl = null
+  }
+  if (currentBlobUrl) {
+    URL.revokeObjectURL(currentBlobUrl)
+    currentBlobUrl = null
   }
   stopProgressLoop()
 }

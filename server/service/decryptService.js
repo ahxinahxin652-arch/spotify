@@ -1,4 +1,5 @@
 const decryptDao = require('../dao/decryptDao')
+const fs = require('fs')
 
 // ========== 音乐解密 Service ==========
 
@@ -47,8 +48,6 @@ async function decryptFile(inputPath, outputPath, outputFormat = 'mp3') {
   const result = await decryptDao.decryptFile(inputPath, outputPath, outputFormat)
   return result
 }
-
-const fs = require('fs')
 
 module.exports = {
   getSupportedFormats,

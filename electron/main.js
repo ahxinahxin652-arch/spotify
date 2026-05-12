@@ -60,8 +60,8 @@ function startExpressServer() {
   expressApp.use(express.urlencoded({ extended: true, limit: '500mb' }))
 
   // ---- 音乐仓库 API ----
-  const musicDao = require('./dao/musicDao')
-  const musicService = require('./service/musicService')
+  const musicDao = require('../server/dao/musicDao')
+  const musicService = require('../server/service/musicService')
 
   expressApp.get('/api/music/warehouses', (req, res) => {
     res.json(musicService.getMusicWarehouses())
@@ -93,8 +93,8 @@ function startExpressServer() {
   })
 
   // ---- 格式转换 API ----
-  const convertDao = require('./dao/convertDao')
-  const convertService = require('./service/convertService')
+  const convertDao = require('../server/dao/convertDao')
+  const convertService = require('../server/service/convertService')
 
   expressApp.post('/api/convert/scan', (req, res) => {
     const { filePaths } = req.body
@@ -141,8 +141,8 @@ function startExpressServer() {
   })
 
   // ---- 音乐解密 API ----
-  const decryptDao = require('./dao/decryptDao')
-  const decryptService = require('./service/decryptService')
+  const decryptDao = require('../server/dao/decryptDao')
+  const decryptService = require('../server/service/decryptService')
 
   expressApp.get('/api/decrypt/formats', (req, res) => {
     res.json(decryptService.getSupportedFormats())
@@ -183,6 +183,29 @@ function setupWindowControls() {
     else mainWindow.maximize()
   })
   ipcMain.on('window-close', () => mainWindow && mainWindow.close())
+
+  // 读取文件为 ArrayBuffer
+  ipcMain.on('read-file', (event, { key, filePath }) => {
+    try {
+      const buffer = fs.readFileSync(filePath)
+      const ext = path.extname(filePath).toLowerCase()
+      const mimeMap = {
+        '.flac': 'audio/flac',
+        '.mp3': 'audio/mpeg',
+        '.ogg': 'audio/ogg',
+        '.wav': 'audio/wav',
+        '.aac': 'audio/aac',
+        '.m4a': 'audio/mp4',
+      }
+      event.reply('read-file-result', {
+        key,
+        buffer: buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+        mimeType: mimeMap[ext] || 'application/octet-stream',
+      })
+    } catch (err) {
+      event.reply('read-file-result', { key, error: err.message })
+    }
+  })
 }
 
 // ========== 启动 ==========

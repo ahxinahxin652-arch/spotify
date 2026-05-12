@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
+const fileInputRef = ref(null)
 const flacFiles = ref([])
 const consoleLogs = ref([])
 const isConverting = ref(false)
@@ -73,8 +74,11 @@ async function startConvert() {
   convertingFileIndex.value = 0
   addLog('info', `===== 开始转换 ${flacFiles.value.length} 个文件 =====`)
 
+  // 解开 Vue Proxy 响应式包装
+  const pureFiles = JSON.parse(JSON.stringify(flacFiles.value))
+
   const result = await window.electronAPI.startConvert({
-    files: flacFiles.value,
+    files: pureFiles, // 使用脱壳后的纯数组
     outputPath: outputPath.value,
   })
 
@@ -131,7 +135,7 @@ const currentFileName = () => {
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             选择文件
-            <input type="file" multiple accept=".flac" style="display:none" @change="handleFileInput" />
+            <input type="file" ref="fileInputRef" multiple accept=".flac" style="display:none" @change="handleFileInput" />
           </label>
         </div>
       </div>
@@ -141,6 +145,7 @@ const currentFileName = () => {
         class="drop-zone"
         @dragover.prevent
         @drop="handleDrop"
+        @click="fileInputRef && fileInputRef.click()"
       >
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>

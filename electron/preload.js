@@ -71,6 +71,41 @@ function onConvertProgress(callback) {
   progressCallback = callback
 }
 
+// ========== 读取文件为 Blob ==========
+function getMimeType(filePath) {
+  const ext = filePath.split('.').pop().toLowerCase()
+  const map = {
+    flac: 'audio/flac',
+    mp3: 'audio/mpeg',
+    ogg: 'audio/ogg',
+    wav: 'audio/wav',
+    aac: 'audio/aac',
+    m4a: 'audio/mp4',
+    wma: 'audio/x-ms-wma',
+  }
+  return map[ext] || 'application/octet-stream'
+}
+
+async function readFileAsBlob(filePath) {
+  return new Promise((resolve, reject) => {
+    const key = `read-file-${Date.now()}-${Math.random()}`
+    const handler = (event, data) => {
+      if (data.key === key) {
+        ipcRenderer.removeListener('read-file-result', handler)
+        if (data.error) {
+          reject(new Error(data.error))
+        } else {
+          // data.buffer 是 ArrayBuffer
+          const blob = new Blob([data.buffer], { type: data.mimeType })
+          resolve(blob)
+        }
+      }
+    }
+    ipcRenderer.on('read-file-result', handler)
+    ipcRenderer.send('read-file', { key, filePath })
+  })
+}
+
 // ========== 窗口控制 ==========
 function minimizeWindow() { ipcRenderer.send('window-minimize') }
 function maximizeWindow() { ipcRenderer.send('window-maximize') }
@@ -123,4 +158,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onWindowMaximized,
   // 选择文件
   selectMusicFiles,
+  // 文件读取
+  readFileAsBlob,
 })

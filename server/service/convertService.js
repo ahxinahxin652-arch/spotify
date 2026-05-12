@@ -1,5 +1,6 @@
 const convertDao = require('../dao/convertDao')
 const path = require('path')
+const fs = require('fs')
 
 // ========== 格式转换 Service ==========
 
@@ -81,8 +82,6 @@ async function startConvert(files, outputPath, onProgress) {
 
   return { success: true }
 }
-
-const fs = require('fs')
 
 module.exports = {
   scanFlacFiles,

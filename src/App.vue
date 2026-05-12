@@ -34,27 +34,9 @@ router.afterEach((to) => {
   <div class="app">
     <!-- ===== 自定义标题栏 ===== -->
     <header class="titlebar" @dblclick="handleMaximize">
-      <!-- 交通灯按钮 -->
-      <div class="traffic-lights">
-        <button class="traffic-btn close" @click.stop="handleClose" title="关闭">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path d="M1 1L9 9M9 1L1 9" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <button class="traffic-btn minimize" @click.stop="handleMinimize" title="最小化">
-          <svg width="10" height="10" viewBox="0 0 10 10">
-            <path d="M1 5h8" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <button class="traffic-btn maximize" @click.stop="handleMaximize" title="最大化">
-          <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10">
-            <rect x="1.5" y="1.5" width="7" height="7" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" fill="none" rx="0.5"/>
-          </svg>
-          <svg v-else width="10" height="10" viewBox="0 0 10 10">
-            <rect x="2.5" y="2.5" width="5" height="5" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" fill="none" rx="0.5"/>
-            <path d="M1.5 4.5h3v3.5h-3.5v-3z" stroke="rgba(0,0,0,0.5)" stroke-width="1.1" fill="none" rx="0.3"/>
-          </svg>
-        </button>
+      <!-- Logo -->
+      <div>
+        Spotify
       </div>
 
       <!-- 主导航 -->
@@ -95,6 +77,30 @@ router.afterEach((to) => {
           格式转换
         </button>
       </nav>
+
+      <!-- 交通灯按钮 -->
+      <div class="traffic-lights">
+        <button class="traffic-btn minimize" @click.stop="handleMinimize" title="最小化">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 5h8" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="traffic-btn maximize" @click.stop="handleMaximize" title="最大化">
+          <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10">
+            <rect x="1.5" y="1.5" width="7" height="7" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" fill="none" rx="0.5"/>
+          </svg>
+          <svg v-else width="10" height="10" viewBox="0 0 10 10">
+            <rect x="2.5" y="2.5" width="5" height="5" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" fill="none" rx="0.5"/>
+            <path d="M1.5 4.5h3v3.5h-3.5v-3z" stroke="rgba(0,0,0,0.5)" stroke-width="1.1" fill="none" rx="0.3"/>
+          </svg>
+        </button>
+        <button class="traffic-btn close" @click.stop="handleClose" title="关闭">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M1 1L9 9M9 1L1 9" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
     </header>
 
     <!-- ===== 路由视图 ===== -->
