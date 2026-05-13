@@ -1,0 +1,226 @@
+/* ========== 底部播放条 ========== */
+.footbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--footbar-h);
+    padding: 0 24px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 16px;
+}
+
+.foot-left {
+    flex: 1;
+    min-width: 180px;
+    max-width: 300px;
+    display: flex;
+    align-items: center;
+}
+
+.track-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.track-cover {
+    width: 40px;
+    height: 40px;
+    background: var(--surface-2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.track-cover.empty {
+    opacity: 0.4;
+}
+
+.track-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.track-name {
+    font-size: 13px;
+    color: var(--text-h);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-name.empty-text {
+    color: var(--text);
+    opacity: 0.5;
+    font-size: 12px;
+}
+
+.track-warehouse {
+    font-size: 11px;
+    color: var(--text);
+    opacity: 0.6;
+}
+
+/* 中间播放控制 */
+.foot-center {
+    flex: 2;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ctrl-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 50%;
+    transition: all 0.15s;
+}
+
+.ctrl-btn:hover:not(:disabled) {
+    color: var(--text-h);
+    background: var(--surface-2);
+}
+
+.ctrl-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.ctrl-btn.play-btn {
+    background: var(--text-h);
+    color: var(--bg);
+    width: 36px;
+    height: 36px;
+}
+
+.ctrl-btn.play-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: #fff;
+    transform: scale(1.05);
+}
+
+/* 进度条 */
+.progress-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.time-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text);
+    opacity: 0.6;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: center;
+}
+
+.progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.progress-track:hover .progress-thumb {
+    opacity: 1;
+}
+
+.progress-track:hover .progress-fill {
+    background: var(--accent-hover);
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.25s ease;
+    pointer-events: none;
+}
+
+.progress-thumb {
+    position: absolute;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: var(--text-h);
+    border-radius: 50%;
+    transform: translateX(50%);
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+}
+
+/* 右侧音量 */
+.foot-right {
+    flex: 1;
+    min-width: 180px;
+    max-width: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.vol-btn {
+    padding: 4px;
+}
+
+/* 侧栏切换按钮 */
+.sidebar-toggle-btn {
+    transition: all 0.15s;
+}
+
+.sidebar-toggle-btn.active {
+    color: var(--accent);
+}
+
+.volume-slider {
+    flex: 1;
+    min-width: 80px;
+    max-width: 120px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: var(--surface-3);
+    border-radius: 2px;
+    cursor: pointer;
+    outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--text-h);
+    border-radius: 50%;
+    cursor: pointer;
+}
