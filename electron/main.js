@@ -184,6 +184,29 @@ function setupWindowControls() {
   })
   ipcMain.on('window-close', () => mainWindow && mainWindow.close())
 
+  // 选择文件，处理前端选择音乐文件的请求
+  ipcMain.handle('dialog:selectMusicFiles', async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile', 'multiSelections'],
+        title: '选择音频文件',
+        filters: [
+          {
+            name: '音频文件',
+            extensions: ['flac', 'mp3', 'ogg', 'wav', 'aac', 'm4a', 'kgm', 'kgma', 'qmc0', 'qmc3', 'qmcflac', 'qmcogg', 'mflac', 'mgg', 'ncm', 'kwm']
+          },
+        ],
+      })
+      if (result.canceled) {
+        return []
+      }
+      return result.filePaths
+    } catch (err) {
+      console.error('打开文件管理器失败:', err)
+      return []
+    }
+  })
+
   // 读取文件为 ArrayBuffer
   ipcMain.on('read-file', (event, { key, filePath }) => {
     try {

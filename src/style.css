@@ -915,22 +915,24 @@ body {
     gap: 6px;
 }
 
-/* 拖拽区 */
-.drop-zone {
-    margin: 12px;
-    border: 2px dashed var(--border);
-    border-radius: 10px;
+.panel-files {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 24px;
-    color: var(--text);
-    opacity: 0.7;
+    height: 100%;
+}
+
+/* 拖拽区 */
+/* 当没有文件时，让 drop-zone 填满 panel */
+
+/* 当有文件时，drop-zone 缩小成一个扁平的区域放在顶部 */
+.drop-zone {
+    margin: 12px;
+    padding: 20px;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
-    text-align: center;
+    flex-shrink: 0; /* 防止被列表挤压 */
 }
 
 .drop-zone:hover,
@@ -938,6 +940,29 @@ body {
     border-color: var(--accent);
     background: var(--accent-dim);
     opacity: 1;
+}
+
+/* 占满整个左侧面板的拖拽区[cite: 1] */
+.drop-zone-fullscreen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 16px;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.drop-zone-fullscreen:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+}
+
+.drop-content {
+    text-align: center;
+    color: var(--text);
 }
 
 .drop-hint {
@@ -949,7 +974,7 @@ body {
 .file-list {
     flex: 1;
     overflow-y: auto;
-    padding: 4px 0;
+    padding: 8px 0;
 }
 
 .file-list::-webkit-scrollbar {
@@ -1014,17 +1039,15 @@ body {
     font-weight: 500;
 }
 
+/* 移除按钮样式 */
 .btn-remove {
-    background: none;
+    background: transparent;
     border: none;
     color: var(--text);
+    font-size: 18px;
     cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
     opacity: 0;
-    transition: all 0.15s;
-    border-radius: 4px;
+    padding: 0 10px;
 }
 
 .file-item:hover .btn-remove {
@@ -1032,10 +1055,10 @@ body {
 }
 
 .btn-remove:hover {
-    background: var(--error);
-    color: #fff;
+    color: var(--error);
     opacity: 1;
 }
+
 
 /* 控制台 */
 .panel-console {

@@ -120,17 +120,10 @@ function onWindowMaximized(callback) { maximizedCallback = callback }
 // ========== 选择音频文件 ==========
 async function selectMusicFiles() {
   try {
-    const { dialog } = require('electron')
-    const result = await dialog.showOpenDialog({
-      properties: ['openFile', 'multiSelections'],
-      title: '选择音频文件',
-      filters: [
-        { name: '音频文件', extensions: ['flac', 'mp3', 'ogg', 'wav', 'aac', 'm4a', 'kgm', 'kgma', 'qmc0', 'qmc3', 'qmcflac', 'qmcogg', 'mflac', 'mgg', 'ncm', 'kwm'] },
-      ],
-    })
-    if (result.canceled) return []
-    return result.filePaths
-  } catch {
+    // 👇 改为向主进程发送 invoke 请求，并等待主进程返回文件路径数组
+    return await ipcRenderer.invoke('dialog:selectMusicFiles')
+  } catch (err) {
+    console.error('选择音频文件出错:', err)
     return []
   }
 }

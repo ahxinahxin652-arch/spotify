@@ -19,35 +19,51 @@ function addLog(type, message) {
 async function handleFileInput(e) {
   const fileList = Array.from(e.target.files)
   const filePaths = fileList.map(f => f.path)
-  addLog('info', `检测到 ${fileList.length} 个文件，正在分析...`)
+  addLog('info', `检测到 ${fileList.length} 个新文件，正在分析...`)
+
   const result = await window.electronAPI.scanFiles(filePaths)
   if (result.success) {
-    flacFiles.value = result.files
-    addLog('success', `扫描完成，共发现 ${result.files.length} 个 FLAC 文件`)
-    if (result.files.length > 0 && !outputPath.value) {
-      const dir = result.files[0].path.substring(0, result.files[0].path.lastIndexOf('\\'))
+    // 【优化】：将新文件追加到现有列表，并根据 path 去重
+    const newFiles = result.files.filter(nf =>
+        !flacFiles.value.some(ef => ef.path === nf.path)
+    )
+    flacFiles.value = [...flacFiles.value, ...newFiles]
+
+    addLog('success', `扫描完成，新增 ${newFiles.length} 个文件，当前共 ${flacFiles.value.length} 个`)
+
+    if (flacFiles.value.length > 0 && !outputPath.value) {
+      const dir = flacFiles.value[0].path.substring(0, flacFiles.value[0].path.lastIndexOf('\\'))
       outputPath.value = dir
       addLog('info', `自动设置输出目录: ${dir}`)
     }
   } else {
     addLog('error', `扫描失败: ${result.error}`)
   }
-  e.target.value = ''
+  e.target.value = '' // 重置 input，允许重复选择相同文件触发 change
 }
 
 function handleDrop(e) {
   e.preventDefault()
   const fileList = Array.from(e.dataTransfer.files)
   const filePaths = fileList.map(f => f.path)
-  addLog('info', `检测到 ${fileList.length} 个文件，正在分析...`)
+  addLog('info', `拖拽识别中...`)
+
   window.electronAPI.scanFiles(filePaths).then(result => {
     if (result.success) {
-      flacFiles.value = result.files
-      addLog('success', `扫描完成，共发现 ${result.files.length} 个 FLAC 文件`)
-    } else {
-      addLog('error', `扫描失败: ${result.error}`)
+      // 【优化】：追加并去重[cite: 1]
+      const newFiles = result.files.filter(nf =>
+          !flacFiles.value.some(ef => ef.path === nf.path)
+      )
+      flacFiles.value = [...flacFiles.value, ...newFiles]
+      addLog('success', `添加完成`)
     }
   })
+}
+
+// 辅助函数：统一触发文件管理器
+function openFilePicker() {
+  if (isConverting.value) return
+  fileInputRef.value?.click()
 }
 
 async function selectOutputPath() {
@@ -125,39 +141,45 @@ const currentFileName = () => {
   <div class="converter-view">
     <!-- 左侧：上传/文件列表 -->
     <div class="panel panel-files">
+
       <div class="panel-header">
         <h2>FLAC 文件</h2>
         <div class="header-actions">
           <button class="btn btn-small" @click="flacFiles = []" :disabled="flacFiles.length === 0 || isConverting">清空</button>
-          <label class="btn btn-small">
+          <!-- 1. 将 label 改为 button，并禁用原生默认行为 -->
+          <button class="btn btn-small" @click="openFilePicker" :disabled="isConverting">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            选择文件
-            <input type="file" ref="fileInputRef" multiple accept=".flac" style="display:none" @change="handleFileInput" />
-          </label>
+            添加文件
+          </button>
+          <!-- 2. 将隐藏的 input 提出来作为独立兄弟元素，不要包裹在任何具有点击事件的父级中 -->
+          <input type="file" ref="fileInputRef" multiple accept=".flac" style="display:none" @change="handleFileInput" />
         </div>
       </div>
 
-      <!-- 拖拽区 -->
+      <!-- 【修改点】：使用 v-if，当列表有文件时，此区域彻底消失[cite: 1] -->
       <div
-        class="drop-zone"
-        @dragover.prevent
-        @drop="handleDrop"
-        @click="fileInputRef && fileInputRef.click()"
+          v-if="flacFiles.length === 0"
+          class="drop-zone-fullscreen"
+          @dragover.prevent
+          @drop="handleDrop"
+          @click="openFilePicker"
       >
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <p>拖拽 FLAC 文件到此处</p>
-        <p class="drop-hint">支持拖拽文件和文件夹，将自动扫描所有 FLAC</p>
+        <div class="drop-content">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>点击或拖拽 FLAC 文件到此处</p>
+          <span class="drop-hint">支持多个文件追加管理</span>
+        </div>
       </div>
 
-      <!-- 文件列表 -->
-      <div class="file-list" v-if="flacFiles.length > 0">
+      <!-- 文件列表：当有文件时占满剩余容器[cite: 1] -->
+      <div class="file-list" v-else>
         <div v-for="(file, index) in flacFiles" :key="file.path" class="file-item" :class="{ active: index === convertingFileIndex }">
           <div class="file-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -170,8 +192,13 @@ const currentFileName = () => {
             <span class="file-name">{{ file.name }}</span>
             <span class="file-size">{{ formatSize(file.size) }}</span>
           </div>
+          <!-- 添加一个移除按钮，增强管理功能[cite: 1] -->
+          <button class="btn-remove" v-if="!isConverting" @click.stop="flacFiles.splice(index, 1)">
+            ×
+          </button>
         </div>
       </div>
+
     </div>
 
     <!-- 右侧：控制台 -->
