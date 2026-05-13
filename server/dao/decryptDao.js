@@ -11,6 +11,64 @@ const DECRYPTABLE_EXTS = [
 ]
 
 /**
+ * 扫描可解密的文件
+ * @param {string[]} filePaths
+ * @returns {{ success: boolean, files?: Array, error?: string }}
+ */
+function scanDecryptFiles(filePaths) {
+  const decryptableFiles = []
+
+  for (const filePath of filePaths) {
+    try {
+      const stats = fs.statSync(filePath)
+      if (stats.isDirectory()) {
+        scanDir(filePath, decryptableFiles)
+      } else if (stats.isFile()) {
+        const ext = '.' + filePath.split('.').pop().toLowerCase()
+        if (DECRYPTABLE_EXTS.includes(ext)) {
+          decryptableFiles.push({
+            name: path.basename(filePath),
+            path: filePath,
+            size: stats.size,
+          })
+        }
+      }
+    } catch (e) {
+      // 忽略
+    }
+  }
+
+  return { success: true, files: decryptableFiles }
+}
+
+/**
+ * 递归扫描目录
+ */
+function scanDir(dir, result) {
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        scanDir(fullPath, result)
+      } else if (entry.isFile()) {
+        const ext = '.' + entry.name.split('.').pop().toLowerCase()
+        if (DECRYPTABLE_EXTS.includes(ext)) {
+          const stats = fs.statSync(fullPath)
+          result.push({
+            name: entry.name,
+            path: fullPath,
+            size: stats.size,
+          })
+        }
+      }
+    }
+  } catch (e) {
+    // 忽略无权限的目录
+  }
+}
+
+/**
  * 获取支持的扩展名列表
  */
 function getSupportedExtensions() {
@@ -185,6 +243,7 @@ function aesEcbDecrypt(buffer, key) {
 }
 
 module.exports = {
+  scanDecryptFiles,
   getSupportedExtensions,
   isDecryptable,
   decryptFile,

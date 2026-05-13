@@ -58,6 +58,14 @@ async function selectDirectory() {
 }
 
 // ========== 音乐解密 API ==========
+function scanDecryptFiles(filePaths) {
+  return apiFetch('/api/decrypt/scan', { method: 'POST', body: { filePaths } })
+}
+
+function startDecrypt({ files, outputPath }) {
+  return apiFetch('/api/decrypt/start', { method: 'POST', body: { files, outputPath } })
+}
+
 function decryptFile({ inputPath, outputPath, outputFormat }) {
   return apiFetch('/api/decrypt/file', { method: 'POST', body: { inputPath, outputPath, outputFormat } })
 }
@@ -69,6 +77,14 @@ ipcRenderer.on('convert-progress', (event, data) => {
 })
 function onConvertProgress(callback) {
   progressCallback = callback
+}
+
+let decryptProgressCallback = null
+ipcRenderer.on('decrypt-progress', (event, data) => {
+  if (decryptProgressCallback) decryptProgressCallback(data)
+})
+function onDecryptProgress(callback) {
+  decryptProgressCallback = callback
 }
 
 // ========== 读取文件为 Blob ==========
@@ -142,9 +158,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startConvert,
   selectDirectory,
   // 音乐解密
+  scanDecryptFiles,
+  startDecrypt,
   decryptFile,
   // 进度 & 窗口
   onConvertProgress,
+  onDecryptProgress,
   minimizeWindow,
   maximizeWindow,
   closeWindow,

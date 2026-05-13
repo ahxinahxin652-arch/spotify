@@ -1,19 +1,13 @@
 <script setup>
 import { ref } from 'vue'
 
-const DECRYPTABLE_EXTS = [
-  '.kgm', '.kgma', '.vpr', '.kgmm',      // 酷狗
-  '.qmc0', '.qmc3', '.qmcflac', '.qmcogg', '.mflac', '.mgg', // QQ音乐
-  '.ncm',                                    // 网易云
-  '.kwm'                                    // 酷我
-]
-
-const isDragging = ref(false)
-const files = ref([])              // 待解密文件列表
+const fileInputRef = ref(null)
+const files = ref([])
 const consoleLogs = ref([])
 const isProcessing = ref(false)
 const currentFileIndex = ref(-1)
-const currentProgress = ref(0)
+const totalProgress = ref(0)
+const fileProgress = ref(0)
 const outputPath = ref('')
 let logId = 0
 
@@ -22,58 +16,52 @@ function addLog(type, message) {
   consoleLogs.value.push({ id: logId++, type, message, time })
 }
 
-function handleDragOver(e) {
-  e.preventDefault()
-  isDragging.value = true
-}
+async function handleFileInput(e) {
+  const fileList = Array.from(e.target.files)
+  const filePaths = fileList.map(f => f.path)
+  addLog('info', `检测到 ${fileList.length} 个新文件，正在分析...`)
 
-function handleDragLeave(e) {
-  e.preventDefault()
-  isDragging.value = false
+  const result = await window.electronAPI.scanDecryptFiles(filePaths)
+  if (result.success) {
+    const newFiles = result.files.filter(nf =>
+        !files.value.some(ef => ef.path === nf.path)
+    )
+    files.value = [...files.value, ...newFiles]
+
+    addLog('success', `扫描完成，新增 ${newFiles.length} 个文件，当前共 ${files.value.length} 个`)
+
+    if (files.value.length > 0 && !outputPath.value) {
+      const dir = files.value[0].path.substring(0, files.value[0].path.lastIndexOf('\\'))
+      outputPath.value = dir
+      addLog('info', `自动设置输出目录: ${dir}`)
+    }
+  } else {
+    addLog('error', `扫描失败: ${result.error}`)
+  }
+  e.target.value = ''
 }
 
 function handleDrop(e) {
   e.preventDefault()
-  isDragging.value = false
   const fileList = Array.from(e.dataTransfer.files)
-  addFiles(fileList)
-}
+  const filePaths = fileList.map(f => f.path)
+  addLog('info', `拖拽识别中...`)
 
-function handleFileInput(e) {
-  const fileList = Array.from(e.target.files)
-  addFiles(fileList)
-  e.target.value = ''
-}
-
-function addFiles(fileList) {
-  let added = 0
-  for (const file of fileList) {
-    const ext = '.' + file.name.split('.').pop().toLowerCase()
-    if (DECRYPTABLE_EXTS.includes(ext)) {
-      // 检查是否已存在
-      if (!files.value.find(f => f.path === file.path)) {
-        files.value.push({
-          name: file.name,
-          path: file.path,
-          size: file.size,
-          status: 'pending', // pending | decrypting | done | error
-          outputPath: '',
-          error: '',
-        })
-        added++
-      }
+  window.electronAPI.scanDecryptFiles(filePaths).then(result => {
+    if (result.success) {
+      const newFiles = result.files.filter(nf =>
+          !files.value.some(ef => ef.path === nf.path)
+      )
+      files.value = [...files.value, ...newFiles]
+      addLog('success', `添加完成`)
     }
-  }
-  addLog('info', `添加了 ${added} 个可解密文件（${fileList.length - added} 个跳过）`)
+  })
 }
 
-function removeFile(index) {
-  files.value.splice(index, 1)
-}
-
-function clearFiles() {
-  files.value = []
-  addLog('info', '已清空文件列表')
+// 辅助函数：统一触发文件管理器
+function openFilePicker() {
+  if (isProcessing.value) return
+  fileInputRef.value?.click()
 }
 
 async function selectOutputPath() {
@@ -90,133 +78,121 @@ async function startDecrypt() {
     return
   }
   if (!outputPath.value) {
-    // 默认使用音乐库目录
-    outputPath.value = await window.electronAPI.getMusicWarehouseDir()
-    if (!outputPath.value) {
-      addLog('warn', '请选择输出目录')
-      return
-    }
+    addLog('warn', '请先选择输出目录')
+    return
   }
 
   isProcessing.value = true
+  totalProgress.value = 0
+  fileProgress.value = 0
+  currentFileIndex.value = 0
   addLog('info', `===== 开始解密 ${files.value.length} 个文件 =====`)
 
-  for (let i = 0; i < files.value.length; i++) {
-    const file = files.value[i]
-    file.status = 'decrypting'
-    currentFileIndex.value = i
-    currentProgress.value = 0
+  const pureFiles = JSON.parse(JSON.stringify(files.value))
 
-    try {
-      const result = await window.electronAPI.decryptFile({
-        inputPath: file.path,
-        outputPath: outputPath.value,
-        outputFormat: 'mp3',
-      })
+  const result = await window.electronAPI.startDecrypt({
+    files: pureFiles,
+    outputPath: outputPath.value,
+  })
 
-      if (result.success) {
-        file.status = 'done'
-        file.outputPath = result.outputPath
-        addLog('success', `解密完成: ${file.name} → ${result.outputFileName}`)
-      } else {
-        file.status = 'error'
-        file.error = result.error
-        addLog('error', `解密失败: ${file.name} - ${result.error}`)
-      }
-    } catch (err) {
-      file.status = 'error'
-      file.error = err.message
-      addLog('error', `解密出错: ${file.name} - ${err.message}`)
+  if (!result.success) {
+    addLog('error', `解密失败: ${result.error}`)
+    isProcessing.value = false
+    return
+  }
+
+  window.electronAPI.onDecryptProgress((data) => {
+    if (data.type === 'file-progress') {
+      fileProgress.value = data.progress
+      totalProgress.value = data.totalProgress
+      currentFileIndex.value = data.index
+    } else if (data.type === 'file-done') {
+      addLog('success', `完成: ${data.filename}`)
+      fileProgress.value = 100
+    } else if (data.type === 'all-done') {
+      addLog('success', `===== 全部解密完成！共 ${data.total} 个文件 =====`)
+      addLog('success', `输出目录: ${data.outputPath}`)
+      isProcessing.value = false
+      totalProgress.value = 100
+    } else if (data.type === 'error') {
+      addLog('error', `解密出错: ${data.error}`)
     }
-  }
-
-  isProcessing.value = false
-  addLog('success', `===== 解密完成 =====`)
-  currentFileIndex.value = -1
+  })
 }
-
-function getStatusIcon(status) {
-  const map = {
-    pending: { color: 'var(--text)', label: '等待' },
-    decrypting: { color: 'var(--accent)', label: '解密中' },
-    done: { color: 'var(--success)', label: '完成' },
-    error: { color: 'var(--error)', label: '失败' },
-  }
-  return map[status] || map.pending
-}
-
-const doneCount = () => files.value.filter(f => f.status === 'done').length
-const totalCount = () => files.value.length
 
 function formatSize(bytes) {
   if (!bytes) return '0 B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / 1024 / 1024).toFixed(2) + ' MB'
+}
+
+const progressPercent = () => Math.round(totalProgress.value)
+const currentFileName = () => {
+  if (currentFileIndex.value >= 0 && currentFileIndex.value < files.value.length) {
+    return files.value[currentFileIndex.value].name
+  }
+  return ''
 }
 </script>
 
 <template>
-  <div class="unlock-view">
-    <!-- 左侧：文件列表 -->
+  <div class="converter-view">
+    <!-- 左侧：上传/文件列表 -->
     <div class="panel panel-files">
+
       <div class="panel-header">
         <h2>待解密文件</h2>
         <div class="header-actions">
-          <button class="btn btn-small" @click="clearFiles" :disabled="files.length === 0 || isProcessing">清空</button>
-          <label class="btn btn-small" :class="{ disabled: isProcessing }">
+          <button class="btn btn-small" @click="files = []" :disabled="files.length === 0 || isProcessing">清空</button>
+          <button class="btn btn-small" @click="openFilePicker" :disabled="isProcessing">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             添加文件
-            <input type="file" multiple accept=".kgm,.kgma,.vpr,.kgmm,.qmc0,.qmc3,.qmcflac,.qmcogg,.mflac,.mgg,.ncm,.kwm" style="display:none" @change="handleFileInput" />
-          </label>
+          </button>
+          <input type="file" ref="fileInputRef" multiple accept=".kgm,.kgma,.vpr,.kgmm,.qmc0,.qmc3,.qmcflac,.qmcogg,.mflac,.mgg,.ncm,.kwm" style="display:none" @change="handleFileInput" />
         </div>
       </div>
 
-      <!-- 拖拽区 -->
+      <!-- 使用 v-if，当列表有文件时，此区域彻底消失 -->
       <div
-        class="drop-zone"
-        :class="{ dragging: isDragging }"
-        @dragover="handleDragOver"
-        @dragleave="handleDragLeave"
-        @drop="handleDrop"
+          v-if="files.length === 0"
+          class="drop-zone-fullscreen"
+          @dragover.prevent
+          @drop="handleDrop"
+          @click="openFilePicker"
       >
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <p>拖拽加密音乐文件到此处</p>
-        <p class="drop-hint">支持: kgm, kgma, qmc0, qmc3, qmcflac, qmcogg, mflac, mgg, ncm, kwm</p>
+        <div class="drop-content">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>点击或拖拽加密音乐文件到此处</p>
+          <span class="drop-hint">支持: kgm, kgma, qmc0, qmc3, qmcflac, qmcogg, mflac, mgg, ncm, kwm</span>
+        </div>
       </div>
 
-      <!-- 文件列表 -->
-      <div class="file-list" v-if="files.length > 0">
+      <!-- 文件列表：当有文件时占满剩余容器 -->
+      <div class="file-list" v-else>
         <div v-for="(file, index) in files" :key="file.path" class="file-item" :class="{ active: index === currentFileIndex }">
           <div class="file-icon">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
             </svg>
           </div>
           <div class="file-info">
             <span class="file-name">{{ file.name }}</span>
-            <span class="file-meta">
-              <span class="file-size">{{ formatSize(file.size) }}</span>
-              <span class="file-status" :style="{ color: getStatusIcon(file.status).color }">
-                {{ getStatusIcon(file.status).label }}
-              </span>
-            </span>
+            <span class="file-size">{{ formatSize(file.size) }}</span>
           </div>
-          <button class="btn-remove" @click="removeFile(index)" :disabled="isProcessing">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+          <button class="btn-remove" v-if="!isProcessing" @click.stop="files.splice(index, 1)">
+            ×
           </button>
         </div>
       </div>
+
     </div>
 
     <!-- 右侧：控制台 -->
@@ -242,18 +218,20 @@ function formatSize(bytes) {
           </div>
           <button class="btn btn-small" @click="selectOutputPath" :disabled="isProcessing">选择</button>
         </div>
-        <div class="progress-row" v-if="isProcessing">
+        <div class="progress-row" v-if="isProcessing || totalProgress > 0">
           <div class="progress-info">
-            <span>{{ doneCount() }} / {{ totalCount() }} 已完成</span>
+            <span>{{ isProcessing ? `正在解密: ${currentFileName()}` : '解密完成' }}</span>
+            <span>{{ progressPercent() }}%</span>
           </div>
           <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: (doneCount() / totalCount() * 100) + '%' }"></div>
+            <div class="progress-fill" :style="{ width: progressPercent() + '%' }"></div>
           </div>
+          <div class="progress-detail">第 {{ currentFileIndex + 1 }} / {{ files.length }} 个文件</div>
         </div>
         <button
           class="btn btn-convert"
           @click="startDecrypt"
-          :disabled="isProcessing || files.length === 0"
+          :disabled="isProcessing || files.length === 0 || !outputPath"
         >
           <svg v-if="!isProcessing" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>

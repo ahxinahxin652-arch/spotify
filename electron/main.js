@@ -148,10 +148,34 @@ function startExpressServer() {
     res.json(decryptService.getSupportedFormats())
   })
 
+  expressApp.post('/api/decrypt/scan', (req, res) => {
+    const { filePaths } = req.body
+    res.json(decryptService.scanDecryptFiles(filePaths))
+  })
+
   expressApp.post('/api/decrypt/file', async (req, res) => {
     const { inputPath, outputPath, outputFormat } = req.body
     const result = await decryptService.decryptFile(inputPath, outputPath, outputFormat || 'mp3')
     res.json(result)
+  })
+
+  expressApp.post('/api/decrypt/start', async (req, res) => {
+    const { files, outputPath } = req.body
+    if (!files || !outputPath) {
+      return res.json({ success: false, error: '缺少参数' })
+    }
+
+    if (!fs.existsSync(outputPath)) {
+      return res.json({ success: false, error: '输出目录不存在' })
+    }
+
+    res.json({ success: true, message: '解密开始' })
+
+    await decryptService.startDecrypt(files, outputPath, (data) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('decrypt-progress', data)
+      }
+    })
   })
 
   expressApp.post('/api/decrypt/select-directory', async (req, res) => {
