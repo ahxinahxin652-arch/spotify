@@ -1,9 +1,11 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useSidebarStore } from './stores/sidebar'
 import FootBar from './components/FootBar.vue'
 
 const router = useRouter()
+const sidebarStore = useSidebarStore()
 const isMaximized = ref(false)
 
 onMounted(() => {
@@ -103,10 +105,21 @@ router.afterEach((to) => {
 
     </header>
 
-    <!-- ===== 路由视图 ===== -->
-    <main class="main-view">
-      <router-view />
-    </main>
+    <!-- ===== 主内容区 ===== -->
+    <div class="app-body">
+      <!-- 中心区域：路由视图，可滚动 -->
+      <main class="main-view">
+        <router-view />
+      </main>
+
+      <!-- 右侧侧栏（可扩展，如 Spotify 曲目详情面板） -->
+      <aside
+        class="sidebar"
+        :class="{ 'sidebar-open': sidebarStore.isOpen }"
+        v-if="sidebarStore.isOpen"
+        @click.stop
+      />
+    </div>
 
     <!-- ===== 底部播放条 ===== -->
     <FootBar />

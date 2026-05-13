@@ -58,8 +58,8 @@ async function handleImportFiles(warehouseName, files) {
 
 <template>
   <div class="home-view">
-    <!-- 音乐库区域 -->
-    <section class="section">
+    <!-- 音乐库区域：固定最大高度 50vh，超出可内部滚动 -->
+    <section class="section section-warehouse">
       <div class="section-header">
         <h2 class="section-title">音乐库</h2>
         <button class="btn btn-primary" @click="showCreateDialog = true">
@@ -71,38 +71,40 @@ async function handleImportFiles(warehouseName, files) {
         </button>
       </div>
 
-      <div class="warehouse-grid" v-if="library.warehouses.length > 0">
-        <div
-          v-for="wh in library.warehouses"
-          :key="wh.name"
-          class="warehouse-card"
-          @click="enterWarehouse(wh)"
-          @drop="handleDrop"
-          @dragover.prevent
-          @dragenter.prevent
-          :data-warehouse="wh.name"
-        >
-          <div class="warehouse-cover">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 18V5l12-2v13"/>
-              <circle cx="6" cy="18" r="3"/>
-              <circle cx="18" cy="16" r="3"/>
-            </svg>
-          </div>
-          <div class="warehouse-info">
-            <span class="warehouse-name">{{ wh.name }}</span>
-            <span class="warehouse-count">{{ wh.trackCount }} 首曲目</span>
-          </div>
-          <button
-            class="btn-delete"
-            @click.stop="handleDeleteWarehouse(wh)"
-            title="删除音乐库"
+      <div class="warehouse-grid-wrapper" v-if="library.warehouses.length > 0">
+        <div class="warehouse-grid">
+          <div
+            v-for="wh in library.warehouses"
+            :key="wh.name"
+            class="warehouse-card"
+            @click="enterWarehouse(wh)"
+            @drop="handleDrop"
+            @dragover.prevent
+            @dragenter.prevent
+            :data-warehouse="wh.name"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-          </button>
+            <div class="warehouse-cover">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+            <div class="warehouse-info">
+              <span class="warehouse-name">{{ wh.name }}</span>
+              <span class="warehouse-count">{{ wh.trackCount }} 首曲目</span>
+            </div>
+            <button
+              class="btn-delete"
+              @click.stop="handleDeleteWarehouse(wh)"
+              title="删除音乐库"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -116,8 +118,8 @@ async function handleImportFiles(warehouseName, files) {
       </div>
     </section>
 
-    <!-- 解密 & 转换工具入口 -->
-    <section class="section tools-section">
+    <!-- 工具区域：始终可见 -->
+    <section class="section section-tools">
       <h2 class="section-title">工具</h2>
       <div class="tools-grid">
         <div class="tool-card" @click="router.push('/unlock')">

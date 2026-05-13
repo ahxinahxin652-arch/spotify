@@ -50,6 +50,51 @@ body {
     overflow: hidden;
 }
 
+/* ========== 主内容体（标题栏 + 底部栏之间的区域）========== */
+.app-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    min-height: 0;
+}
+
+/* ========== 路由视图（可滚动）========== */
+.main-view {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+/* 滚动条内嵌不占宽度：保留空间使宽度稳定，滚动条默认透明 */
+.main-view {
+    scrollbar-gutter: stable;
+}
+
+/* 滚动条样式：细长透明，悬停时显示 */
+.main-view::-webkit-scrollbar {
+    width: 6px;
+}
+
+.main-view::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.main-view::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.main-view:hover::-webkit-scrollbar-thumb {
+    opacity: 1;
+}
+
+.main-view::-webkit-scrollbar-thumb:hover {
+    background: var(--surface-3);
+}
+
 /* ========== 自定义标题栏 ========== */
 .titlebar {
     padding-left: 10px;
@@ -147,13 +192,18 @@ body {
     color: var(--accent);
 }
 
-/* ========== 路由视图 ========== */
-.main-view {
-    flex: 1;
+/* ========== 侧栏（Spotify 风格右侧面板）========== */
+.sidebar {
+    width: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    flex-shrink: 0;
     overflow: hidden;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+    transition: width 0.3s ease;
+}
+
+.sidebar.sidebar-open {
+    width: 320px;
 }
 
 /* ========== 底部播放条 ========== */
@@ -376,17 +426,54 @@ body {
     cursor: pointer;
 }
 
-/* ========== 通用视图布局 ========== */
-.home-view,
-.warehouse-view,
-.unlock-view,
-.converter-view {
-    flex: 1;
-    overflow: hidden;
+/* ========== 主页视图 ========== */
+.home-view {
     display: flex;
     flex-direction: column;
     padding: 20px 24px;
     gap: 20px;
+    min-height: 100%;
+}
+
+/* 音乐库区域：固定最大高度，超出内滚动 */
+.section-warehouse {
+    flex-shrink: 0;
+    max-height: 50vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 音乐库网格容器：撑满剩余高度，内滚动 */
+.warehouse-grid-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0 -6px;
+    padding: 0 6px;
+}
+
+/* 滚动条内嵌不占宽度 */
+.warehouse-grid-wrapper {
+    scrollbar-gutter: stable;
+}
+
+.warehouse-grid-wrapper::-webkit-scrollbar {
+    width: 4px;
+}
+
+.warehouse-grid-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.warehouse-grid-wrapper::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
+
+/* 工具区域：始终可见 */
+.section-tools {
+    flex-shrink: 0;
 }
 
 /* ========== Section ========== */
@@ -394,6 +481,15 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+/* ========== 音乐库详情视图 ========== */
+.warehouse-view {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px;
+    gap: 16px;
+    min-height: 100%;
 }
 
 .section-header {
