@@ -980,6 +980,9 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     padding: 16px 20px;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
 }
 
 .panel {
