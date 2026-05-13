@@ -54,6 +54,8 @@
     padding: 24px 20px;
     gap: 16px;
     overflow-y: auto;
+    /* 滚动条固定占位，防止出现/消失时内容宽度跳动 */
+    scrollbar-gutter: stable;
 }
 
 /* 专辑封面 */
