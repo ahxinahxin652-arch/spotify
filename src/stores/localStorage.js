@@ -4,12 +4,14 @@ import { ref } from 'vue'
 // ========== localStorage 字段常量 ==========
 const KEY_MUSIC_UNLOCK_OUTPUT = 'music_unlock_output'
 const KEY_MUSIC_CONVERT_OUTPUT = 'music_convert_output'
+const KEY_IS_RIGHT_BAR_SHOW = 'is_right_bar_show'
 
 // ========== localStorage 管理 Store ==========
 export const useLocalStorageStore = defineStore('localStorage', () => {
   // ---- 状态 ----
   const musicUnlockOutput = ref(localStorage.getItem(KEY_MUSIC_UNLOCK_OUTPUT) || '')
   const musicConvertOutput = ref(localStorage.getItem(KEY_MUSIC_CONVERT_OUTPUT) || '')
+  const isRightBarShow = ref(localStorage.getItem(KEY_IS_RIGHT_BAR_SHOW) === 'true')
 
   // ---- Actions ----
 
@@ -39,10 +41,21 @@ export const useLocalStorageStore = defineStore('localStorage', () => {
     }
   }
 
+  /**
+   * 设置右侧边栏显示状态
+   * @param {boolean} val
+   */
+  function setRightBarShow(val) {
+    isRightBarShow.value = val
+    localStorage.setItem(KEY_IS_RIGHT_BAR_SHOW, val ? 'true' : 'false')
+  }
+
   return {
     musicUnlockOutput,
     musicConvertOutput,
+    isRightBarShow,
     setMusicUnlockOutput,
     setMusicConvertOutput,
+    setRightBarShow,
   }
 })

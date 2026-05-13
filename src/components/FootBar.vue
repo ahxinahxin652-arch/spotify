@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { usePlayerStore } from '../stores/player.js'
+import { useSidebarStore } from '../stores/sidebar.js'
 import { Howl } from 'howler'
 
 // ========== 状态 ==========
@@ -8,6 +9,14 @@ let currentBlobUrl = null
 let howl = null
 
 const player = usePlayerStore()
+const sidebarStore = useSidebarStore()
+
+// ========== emit ==========
+const emit = defineEmits(['toggle-right-sidebar'])
+
+function handleToggleSidebar() {
+  emit('toggle-right-sidebar')
+}
 
 // ========== 监听外部播放事件 ==========
 function handlePlayTrackEvent(e) {
@@ -254,8 +263,21 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 右侧：音量 -->
+    <!-- 右侧：音量 + 侧栏开关 -->
     <div class="foot-right">
+      <!-- 右侧边栏切换按钮 -->
+      <button
+        class="ctrl-btn sidebar-toggle-btn"
+        :class="{ active: sidebarStore.isOpen }"
+        @click="handleToggleSidebar"
+        :title="sidebarStore.isOpen ? '隐藏详情' : '显示详情'"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <line x1="9" y1="3" x2="9" y2="21"/>
+        </svg>
+      </button>
+
       <button class="ctrl-btn vol-btn" @click="toggleMute" :title="player.isMuted ? '取消静音' : '静音'">
         <svg v-if="!player.isMuted && player.volume > 0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>

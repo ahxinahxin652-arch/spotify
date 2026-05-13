@@ -39,6 +39,14 @@ export const useSidebarStore = defineStore('sidebar', () => {
     isOpen.value = !isOpen.value
   }
 
+  /**
+   * 设置侧栏展开状态
+   * @param {boolean} val
+   */
+  function setOpen(val) {
+    isOpen.value = val
+  }
+
   return {
     isOpen,
     contentType,
@@ -46,5 +54,6 @@ export const useSidebarStore = defineStore('sidebar', () => {
     open,
     close,
     toggle,
+    setOpen,
   }
 })

@@ -193,17 +193,204 @@ body {
 }
 
 /* ========== 侧栏（Spotify 风格右侧面板）========== */
-.sidebar {
-    width: 0;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    flex-shrink: 0;
+
+/* 侧栏外层包装：fixed 定位，不影响主内容布局 */
+.right-sidebar-wrapper {
+    position: fixed;
+    top: var(--titlebar-h);
+    right: 0;
+    bottom: var(--footbar-h);
+    width: 320px;
+    z-index: 100;
     overflow: hidden;
-    transition: width 0.3s ease;
+    pointer-events: auto;
 }
 
-.sidebar.sidebar-open {
+/* 侧栏滑入/滑出动画 */
+.sidebar-slide-enter-active {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-slide-leave-active {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-slide-enter-from {
+    transform: translateX(100%);
+}
+
+.sidebar-slide-leave-to {
+    transform: translateX(100%);
+}
+
+/* 侧栏内层容器 */
+.right-sidebar {
     width: 320px;
+    height: 100%;
+    background: #121212;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 侧栏头部 */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-h);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.btn-sidebar-close {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.15s;
+}
+
+.btn-sidebar-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-h);
+}
+
+/* 侧栏内容区 */
+.sidebar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+/* 专辑封面 */
+.album-art {
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--surface);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.album-art svg {
+    width: 64px;
+    height: 64px;
+    opacity: 0.6;
+}
+
+/* 曲目详情 */
+.track-detail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.track-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-h);
+    line-height: 1.3;
+    word-break: break-all;
+}
+
+.track-title.empty {
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.track-artist {
+    font-size: 14px;
+    color: var(--text);
+}
+
+.track-artist.empty {
+    opacity: 0.5;
+    font-size: 13px;
+}
+
+/* 侧栏进度条 */
+.sidebar-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-progress .progress-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.sidebar-progress .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.25s linear;
+}
+
+.progress-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text);
+    opacity: 0.5;
+}
+
+/* 侧栏空状态 */
+.sidebar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text);
+    opacity: 0.4;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.sidebar-empty p {
+    font-size: 13px;
+}
+
+/* 滚动条 */
+.sidebar-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
 }
 
 /* ========== 底部播放条 ========== */
@@ -405,8 +592,18 @@ body {
     padding: 4px;
 }
 
+/* 侧栏切换按钮 */
+.sidebar-toggle-btn {
+    transition: all 0.15s;
+}
+
+.sidebar-toggle-btn.active {
+    color: var(--accent);
+}
+
 .volume-slider {
     flex: 1;
+    min-width: 80px;
     max-width: 120px; /* 就算 foot-right 有 300px，音量条本身也不用那么长 */
     height: 4px;
     /* ... 保持你现有的其他滑块样式不变 ... */

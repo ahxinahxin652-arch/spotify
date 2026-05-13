@@ -2,16 +2,22 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSidebarStore } from './stores/sidebar'
+import { useLocalStorageStore } from './stores/localStorage'
 import FootBar from './components/FootBar.vue'
+import RightSideBar from './components/RightSideBar.vue'
 
 const router = useRouter()
 const sidebarStore = useSidebarStore()
+const localStorageStore = useLocalStorageStore()
 const isMaximized = ref(false)
 
 onMounted(() => {
   window.electronAPI.onWindowMaximized((val) => {
     isMaximized.value = val
   })
+
+  // 根据 localStorage 恢复右侧边栏状态
+  sidebarStore.setOpen(localStorageStore.isRightBarShow)
 })
 
 function handleMinimize() {
@@ -30,6 +36,13 @@ const currentRoute = ref(router.currentRoute.value.name)
 router.afterEach((to) => {
   currentRoute.value = to.name
 })
+
+// 切换右侧边栏
+function toggleRightSidebar() {
+  const newVal = !sidebarStore.isOpen
+  sidebarStore.setOpen(newVal)
+  localStorageStore.setRightBarShow(newVal)
+}
 </script>
 
 <template>
@@ -83,7 +96,7 @@ router.afterEach((to) => {
       <!-- 交通灯按钮 -->
       <div class="traffic-lights">
         <button class="traffic-btn minimize" @click.stop="handleMinimize" title="最小化">
-          <svg width="10" height="10" viewBox="0 0 10 10">
+          <svg width="10" height="10" viewView="0 0 10 10">
             <path d="M1 5h8" stroke="rgba(0,0,0,0.5)" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
         </button>
@@ -112,16 +125,19 @@ router.afterEach((to) => {
         <router-view />
       </main>
 
-      <!-- 右侧侧栏（可扩展，如 Spotify 曲目详情面板） -->
-      <aside
-        class="sidebar"
-        :class="{ 'sidebar-open': sidebarStore.isOpen }"
-        v-if="sidebarStore.isOpen"
-        @click.stop
-      />
+      <!-- 右侧侧栏：滑出式 Spotify 风格面板 -->
+      <Transition name="sidebar-slide">
+        <aside
+          class="right-sidebar-wrapper"
+          v-if="sidebarStore.isOpen"
+          @click.stop
+        >
+          <RightSideBar />
+        </aside>
+      </Transition>
     </div>
 
     <!-- ===== 底部播放条 ===== -->
-    <FootBar />
+    <FootBar @toggle-right-sidebar="toggleRightSidebar" />
   </div>
 </template>
