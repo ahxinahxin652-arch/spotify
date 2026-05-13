@@ -79,6 +79,8 @@
     overflow-y: auto;
     padding: 4px 0;
     list-style: none;
+    /* 滚动条固定占位，防止出现/消失时宽度变化 */
+    scrollbar-gutter: stable;
 }
 
 .track-list::-webkit-scrollbar {

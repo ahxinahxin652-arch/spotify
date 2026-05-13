@@ -31,7 +31,8 @@
 .section-warehouse {
     flex-shrink: 0;
     max-height: 50vh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
@@ -41,11 +42,10 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    margin: 0 -6px;
-    padding: 0 6px;
-}
-
-.warehouse-grid-wrapper {
+    /* 用 padding 替代负 margin，防止内容被父容器 overflow-x:hidden 截断 */
+    padding-left: 6px;
+    padding-right: 6px;
+    /* 滚动条固定占位，防止出现/消失时宽度变化 */
     scrollbar-gutter: stable;
 }
 
@@ -147,12 +147,12 @@
 
 /* ========== 工具卡片 ========== */
 .tools-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
 
 .tool-card {
-    flex: 1;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;

@@ -149,7 +149,24 @@ async function handleImportFiles(warehouseName, files) {
             <span class="tool-desc">将 FLAC 等无损格式转换为 MP3</span>
           </div>
         </div>
+
+        <div class="tool-card" @click="router.push('/converter')">
+          <div class="tool-icon converter">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 3 21 3 21 8"/>
+              <line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/>
+              <line x1="15" y1="15" x2="21" y2="21"/>
+            </svg>
+          </div>
+          <div class="tool-info">
+            <span class="tool-name">格式转换</span>
+            <span class="tool-desc">将 FLAC 等无损格式转换为 MP3</span>
+          </div>
+        </div>
+
       </div>
+
     </section>
 
     <!-- 新建音乐库对话框 -->
