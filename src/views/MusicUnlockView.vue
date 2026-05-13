@@ -1,5 +1,8 @@
 <script setup>
 import { ref } from 'vue'
+import { useLocalStorageStore } from '../stores/localStorage'
+
+const localStorageStore = useLocalStorageStore()
 
 const fileInputRef = ref(null)
 const files = ref([])
@@ -8,7 +11,7 @@ const isProcessing = ref(false)
 const currentFileIndex = ref(-1)
 const totalProgress = ref(0)
 const fileProgress = ref(0)
-const outputPath = ref('')
+const outputPath = ref(localStorageStore.musicUnlockOutput)
 let logId = 0
 
 function addLog(type, message) {
@@ -29,12 +32,6 @@ async function handleFileInput(e) {
     files.value = [...files.value, ...newFiles]
 
     addLog('success', `扫描完成，新增 ${newFiles.length} 个文件，当前共 ${files.value.length} 个`)
-
-    if (files.value.length > 0 && !outputPath.value) {
-      const dir = files.value[0].path.substring(0, files.value[0].path.lastIndexOf('\\'))
-      outputPath.value = dir
-      addLog('info', `自动设置输出目录: ${dir}`)
-    }
   } else {
     addLog('error', `扫描失败: ${result.error}`)
   }
@@ -68,6 +65,7 @@ async function selectOutputPath() {
   const path = await window.electronAPI.selectDirectory()
   if (path) {
     outputPath.value = path
+    localStorageStore.setMusicUnlockOutput(path)
     addLog('info', `输出目录: ${path}`)
   }
 }

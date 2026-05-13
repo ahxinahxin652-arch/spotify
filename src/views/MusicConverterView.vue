@@ -1,5 +1,8 @@
 <script setup>
 import { ref } from 'vue'
+import { useLocalStorageStore } from '../stores/localStorage'
+
+const localStorageStore = useLocalStorageStore()
 
 const fileInputRef = ref(null)
 const flacFiles = ref([])
@@ -8,7 +11,7 @@ const isConverting = ref(false)
 const convertingFileIndex = ref(-1)
 const totalProgress = ref(0)
 const fileProgress = ref(0)
-const outputPath = ref('')
+const outputPath = ref(localStorageStore.musicConvertOutput)
 let logId = 0
 
 function addLog(type, message) {
@@ -30,12 +33,6 @@ async function handleFileInput(e) {
     flacFiles.value = [...flacFiles.value, ...newFiles]
 
     addLog('success', `扫描完成，新增 ${newFiles.length} 个文件，当前共 ${flacFiles.value.length} 个`)
-
-    if (flacFiles.value.length > 0 && !outputPath.value) {
-      const dir = flacFiles.value[0].path.substring(0, flacFiles.value[0].path.lastIndexOf('\\'))
-      outputPath.value = dir
-      addLog('info', `自动设置输出目录: ${dir}`)
-    }
   } else {
     addLog('error', `扫描失败: ${result.error}`)
   }
@@ -70,6 +67,7 @@ async function selectOutputPath() {
   const path = await window.electronAPI.selectDirectory()
   if (path) {
     outputPath.value = path
+    localStorageStore.setMusicConvertOutput(path)
     addLog('info', `输出目录: ${path}`)
   }
 }
