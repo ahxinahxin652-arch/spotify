@@ -168,31 +168,27 @@ body {
 /* ========== 侧栏包装（App.vue 中使用，位于主区域右侧）========== */
 .right-sidebar-wrapper {
     height: 100%;
-    /* 占主区域宽度的 30%，最小 200px，最大 360px */
     width: var(--sidebar-width);
     min-width: 200px;
     max-width: 360px;
-    /* flex 流中不收缩，固定分配 */
     flex-shrink: 0;
     z-index: 100;
     overflow: hidden;
     pointer-events: auto;
 }
 
-/* 侧栏滑入/滑出动画：max-width 驱动布局变化，clip-path 让内容丝滑展开 */
+/*
+ * 动画方案：width + opacity 分工
+ *   - width：驱动 flex 重新分配主区域空间（layout 层，0.28s）
+ *   - opacity：内容淡入/淡出（composite 层，GPU 合成）
+ *   两者分别作用在不同元素上，零冲突，零卡顿
+ */
 .sidebar-slide-enter-active,
 .sidebar-slide-leave-active {
-    transition:
-        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-        clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar-slide-enter-from {
-    max-width: 0;
-    clip-path: inset(0 100% 0 0);
-}
-
+.sidebar-slide-enter-from,
 .sidebar-slide-leave-to {
-    max-width: 0;
-    clip-path: inset(0 100% 0 0);
+    width: 0;
 }

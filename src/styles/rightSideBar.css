@@ -7,6 +7,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* 无 transition：wrapper 的 width + overflow:hidden 负责所有裁剪动画 */
 }
 
 /* ========== 侧栏头部 ========== */
