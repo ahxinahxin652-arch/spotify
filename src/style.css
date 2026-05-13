@@ -160,9 +160,9 @@ body {
 .footbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: space-between; /* 确保两端贴边，中间居中 */
     height: var(--footbar-h);
-    padding: 0 16px;
+    padding: 0 24px; /* 稍微加大左右内边距，呼吸感更好 */
     background: var(--surface);
     border-top: 1px solid var(--border);
     flex-shrink: 0;
@@ -170,8 +170,10 @@ body {
 }
 
 .foot-left {
-    width: 240px;
-    flex-shrink: 0;
+    /* 与右侧保持同等的 flex 比例，确保 Center 绝对居中 */
+    flex: 1;
+    min-width: 180px; /* 保证小窗口时，封面和文字不被过度挤压 */
+    max-width: 300px; /* 窗口变大时，到达 300px 后停止变宽 */
     display: flex;
     align-items: center;
 }
@@ -229,13 +231,13 @@ body {
 
 /* 中间播放控制 */
 .foot-center {
-    flex: 1;
+    flex: 2; /* 基础比例是左右的两倍 */
+    max-width: 700px; /* 限制最大宽度，防止全屏时进度条长得像跑道 */
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    max-width: 600px;
-    margin: 0 auto;
+    /* 移除了原来的 margin: 0 auto，因为父级的 justify-content 会自动处理对齐 */
 }
 
 .controls {
@@ -340,20 +342,24 @@ body {
 
 /* 右侧音量 */
 .foot-right {
-    width: 140px;
-    flex-shrink: 0;
+    flex: 1; /* 与左侧保持 1:1 的弹性，维持视觉对称 */
+    min-width: 180px;
+    max-width: 300px; /* 限制最大宽度，音量条不会变得奇大无比 */
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-end; /* ★ 关键：内部元素靠右对齐 */
+    gap: 12px;
+    /* 移除了原来的 margin-right: 30px */
 }
-
 .vol-btn {
     padding: 4px;
 }
 
 .volume-slider {
     flex: 1;
+    max-width: 120px; /* 就算 foot-right 有 300px，音量条本身也不用那么长 */
     height: 4px;
+    /* ... 保持你现有的其他滑块样式不变 ... */
     -webkit-appearance: none;
     background: var(--surface-3);
     border-radius: 2px;

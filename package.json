@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
-    "build:exe": "npm run build && electron-builder --win portable",
+    "build:exe": "npm run build && electron-builder --win",
     "preview": "vite preview",
     "electron:start": "electron ."
   },
@@ -40,10 +40,14 @@
       "server/**/*"
     ],
     "win": {
-      "target": "portable"
+      "target": "nsis"
     },
-    "portable": {
-      "artifactName": "${productName}.${ext}"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Music Workspace"
     }
   }
 }
