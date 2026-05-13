@@ -10,6 +10,7 @@ const router = useRouter()
 const sidebarStore = useSidebarStore()
 const localStorageStore = useLocalStorageStore()
 const isMaximized = ref(false)
+const sidebarTransition = ref(null)
 
 onMounted(() => {
   window.electronAPI.onWindowMaximized((val) => {
@@ -37,11 +38,26 @@ router.afterEach((to) => {
   currentRoute.value = to.name
 })
 
-// 切换右侧边栏
+// 切换右侧边栏（动画期间禁止重复点击）
 function toggleRightSidebar() {
+  if (sidebarStore.isAnimating) return
   const newVal = !sidebarStore.isOpen
   sidebarStore.setOpen(newVal)
   localStorageStore.setRightBarShow(newVal)
+}
+
+// 动画钩子：标记动画开始/结束
+function onSidebarBeforeEnter() {
+  sidebarStore.startAnimation()
+}
+function onSidebarAfterEnter() {
+  sidebarStore.endAnimation()
+}
+function onSidebarBeforeLeave() {
+  sidebarStore.startAnimation()
+}
+function onSidebarAfterLeave() {
+  sidebarStore.endAnimation()
 }
 </script>
 
@@ -126,10 +142,16 @@ function toggleRightSidebar() {
       </main>
 
       <!-- 右侧侧栏：滑出式 Spotify 风格面板 -->
-      <Transition name="sidebar-slide">
+      <Transition
+        name="sidebar-slide"
+        @before-enter="onSidebarBeforeEnter"
+        @after-enter="onSidebarAfterEnter"
+        @before-leave="onSidebarBeforeLeave"
+        @after-leave="onSidebarAfterLeave"
+      >
         <aside
           class="right-sidebar-wrapper"
-          v-if="sidebarStore.isOpen"
+          v-show="sidebarStore.isOpen"
           @click.stop
         >
           <RightSideBar />

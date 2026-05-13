@@ -204,6 +204,11 @@
     color: var(--accent);
 }
 
+.sidebar-toggle-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .volume-slider {
     flex: 1;
     min-width: 80px;

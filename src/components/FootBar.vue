@@ -268,7 +268,11 @@ onUnmounted(() => {
       <!-- 右侧边栏切换按钮 -->
       <button
         class="ctrl-btn sidebar-toggle-btn"
-        :class="{ active: sidebarStore.isOpen }"
+        :class="{
+          active: sidebarStore.isOpen,
+          disabled: sidebarStore.isAnimating,
+        }"
+        :disabled="sidebarStore.isAnimating"
         @click="handleToggleSidebar"
         :title="sidebarStore.isOpen ? '隐藏详情' : '显示详情'"
       >

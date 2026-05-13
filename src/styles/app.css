@@ -41,10 +41,6 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
-}
-
-/* 滚动条内嵌不占宽度：保留空间使宽度稳定，滚动条默认透明 */
-.main-view {
     scrollbar-gutter: stable;
 }
 
@@ -169,31 +165,34 @@ body {
     color: var(--accent);
 }
 
-/* ========== 侧栏包装（App.vue 中使用，定位侧栏位置）========== */
+/* ========== 侧栏包装（App.vue 中使用，位于主区域右侧）========== */
 .right-sidebar-wrapper {
-    position: fixed;
-    top: var(--titlebar-h);
-    right: 0;
-    bottom: var(--footbar-h);
-    width: 320px;
+    height: 100%;
+    /* 占主区域宽度的 30%，最小 200px，最大 360px */
+    width: var(--sidebar-width);
+    min-width: 200px;
+    max-width: 360px;
+    /* flex 流中不收缩，固定分配 */
+    flex-shrink: 0;
     z-index: 100;
     overflow: hidden;
     pointer-events: auto;
 }
 
-/* 侧栏滑入/滑出动画 */
-.sidebar-slide-enter-active {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+/* 侧栏滑入/滑出动画：max-width 驱动布局变化，clip-path 让内容丝滑展开 */
+.sidebar-slide-enter-active,
 .sidebar-slide-leave-active {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+        max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        clip-path 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-slide-enter-from {
-    transform: translateX(100%);
+    max-width: 0;
+    clip-path: inset(0 100% 0 0);
 }
 
 .sidebar-slide-leave-to {
-    transform: translateX(100%);
+    max-width: 0;
+    clip-path: inset(0 100% 0 0);
 }

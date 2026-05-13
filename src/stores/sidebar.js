@@ -11,6 +11,8 @@ export const useSidebarStore = defineStore('sidebar', () => {
   const contentType = ref('')
   // 侧栏数据
   const data = ref(null)
+  // 侧栏是否正在执行动画（切换中）
+  const isAnimating = ref(false)
 
   // ---- Actions ----
 
@@ -20,6 +22,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
    * @param {any} payload - 侧栏数据
    */
   function open(type, payload = null) {
+    if (isAnimating.value) return
     contentType.value = type
     data.value = payload
     isOpen.value = true
@@ -29,6 +32,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
    * 关闭侧栏
    */
   function close() {
+    if (isAnimating.value) return
     isOpen.value = false
   }
 
@@ -36,6 +40,7 @@ export const useSidebarStore = defineStore('sidebar', () => {
    * 切换侧栏
    */
   function toggle() {
+    if (isAnimating.value) return
     isOpen.value = !isOpen.value
   }
 
@@ -44,16 +49,34 @@ export const useSidebarStore = defineStore('sidebar', () => {
    * @param {boolean} val
    */
   function setOpen(val) {
+    if (isAnimating.value) return
     isOpen.value = val
+  }
+
+  /**
+   * 开始动画（由 App.vue 在动画开始时调用）
+   */
+  function startAnimation() {
+    isAnimating.value = true
+  }
+
+  /**
+   * 结束动画（由 App.vue 在动画结束时调用）
+   */
+  function endAnimation() {
+    isAnimating.value = false
   }
 
   return {
     isOpen,
     contentType,
     data,
+    isAnimating,
     open,
     close,
     toggle,
     setOpen,
+    startAnimation,
+    endAnimation,
   }
 })
