@@ -1,6 +1,6 @@
 {
   "name": "music-workspace",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Music Workspace - 解密 + 转换 + 播放",
   "main": "electron/main.js",
   "author": "",
@@ -29,8 +29,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.musicworkspace.app",
-    "productName": "MusicWorkspace",
+    "appId": "com.spotify.app",
+    "productName": "Spotify",
     "directories": {
       "output": "release"
     },
@@ -47,7 +47,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Music Workspace"
+      "shortcutName": "Spotify"
     }
   }
 }
