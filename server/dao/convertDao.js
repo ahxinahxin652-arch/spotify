@@ -1,13 +1,14 @@
 const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
+const { ScanFileItem } = require('../pojo/vo/ResponseVOs')
 
 // ========== 格式转换 DAO ==========
 
 /**
  * 扫描目录下所有 FLAC 文件
  * @param {string[]} filePaths
- * @returns {{ success: boolean, files?: Array, error?: string }}
+ * @returns {{ success: boolean, files?: Array<import('../pojo/vo/ResponseVOs').ScanFileItem>, error?: string }}
  */
 function scanFlacFiles(filePaths) {
   const flacFiles = []
@@ -19,11 +20,11 @@ function scanFlacFiles(filePaths) {
         scanDir(filePath, flacFiles)
       } else if (stats.isFile()) {
         if (filePath.toLowerCase().endsWith('.flac')) {
-          flacFiles.push({
+          flacFiles.push(new ScanFileItem({
             name: path.basename(filePath),
             path: filePath,
             size: stats.size,
-          })
+          }))
         }
       }
     } catch (e) {
@@ -46,11 +47,11 @@ function scanDir(dir, result) {
         scanDir(fullPath, result)
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.flac')) {
         const stats = fs.statSync(fullPath)
-        result.push({
+        result.push(new ScanFileItem({
           name: entry.name,
           path: fullPath,
           size: stats.size,
-        })
+        }))
       }
     }
   } catch (e) {

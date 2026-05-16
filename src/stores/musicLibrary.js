@@ -10,8 +10,8 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
   async function loadWarehouses() {
     try {
       const result = await window.electronAPI.getMusicWarehouses()
-      if (result.success) {
-        warehouses.value = result.warehouses
+      if (result.success && result.data) {
+        warehouses.value = result.data.warehouses
       }
     } catch (err) {
       console.error('加载音乐库失败:', err)
@@ -21,8 +21,8 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
   async function createWarehouse(name) {
     try {
       const result = await window.electronAPI.createMusicWarehouse(name)
-      if (result.success) {
-        warehouses.value.push(result.warehouse)
+      if (result.success && result.data) {
+        warehouses.value.push(result.data.warehouse)
         return true
       }
       return false

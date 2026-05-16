@@ -4,6 +4,7 @@ const path = require('path')
 const { spawn } = require('child_process')
 const fs = require('fs')
 const { app, BrowserWindow, dialog } = require('electron')
+const ApiResult = require('../server/pojo/vo/ApiResult')
 
 let mainWindow = null
 let expressServer = null
@@ -89,7 +90,7 @@ function startExpressServer() {
   })
 
   expressApp.get('/api/music/warehouse-dir', (req, res) => {
-    res.json({ success: true, path: musicService.getMusicWarehouseDir() })
+    res.json(ApiResult.ok({ path: musicService.getMusicWarehouseDir() }))
   })
 
   // ---- 格式转换 API ----
@@ -104,19 +105,19 @@ function startExpressServer() {
   expressApp.post('/api/convert/start', async (req, res) => {
     const { files, outputPath } = req.body
     if (!files || !outputPath) {
-      return res.json({ success: false, error: '缺少参数' })
+      return res.json(ApiResult.fail('缺少参数'))
     }
 
     const ffmpegPath = convertDao.getFfmpegPath()
     if (!ffmpegPath) {
-      return res.json({ success: false, error: '未找到 ffmpeg，请确保已安装' })
+      return res.json(ApiResult.fail('未找到 ffmpeg，请确保已安装'))
     }
 
     if (!fs.existsSync(outputPath)) {
-      return res.json({ success: false, error: '输出目录不存在' })
+      return res.json(ApiResult.fail('输出目录不存在'))
     }
 
-    res.json({ success: true, message: '转换开始' })
+    res.json(ApiResult.ok(null, '转换开始'))
 
     await convertService.startConvert(files, outputPath, (data) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -132,11 +133,11 @@ function startExpressServer() {
         title: '选择输出目录',
       })
       if (result.canceled) {
-        return res.json({ success: false, canceled: true })
+        return res.json(ApiResult.fail('已取消'))
       }
-      res.json({ success: true, path: result.filePaths[0] })
+      res.json(ApiResult.ok({ path: result.filePaths[0] }))
     } catch (err) {
-      res.json({ success: false, error: err.message })
+      res.json(ApiResult.fail(err.message))
     }
   })
 
@@ -162,14 +163,14 @@ function startExpressServer() {
   expressApp.post('/api/decrypt/start', async (req, res) => {
     const { files, outputPath } = req.body
     if (!files || !outputPath) {
-      return res.json({ success: false, error: '缺少参数' })
+      return res.json(ApiResult.fail('缺少参数'))
     }
 
     if (!fs.existsSync(outputPath)) {
-      return res.json({ success: false, error: '输出目录不存在' })
+      return res.json(ApiResult.fail('输出目录不存在'))
     }
 
-    res.json({ success: true, message: '解密开始' })
+    res.json(ApiResult.ok(null, '解密开始'))
 
     await decryptService.startDecrypt(files, outputPath, (data) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -185,11 +186,11 @@ function startExpressServer() {
         title: '选择输出目录',
       })
       if (result.canceled) {
-        return res.json({ success: false, canceled: true })
+        return res.json(ApiResult.fail('已取消'))
       }
-      res.json({ success: true, path: result.filePaths[0] })
+      res.json(ApiResult.ok({ path: result.filePaths[0] }))
     } catch (err) {
-      res.json({ success: false, error: err.message })
+      res.json(ApiResult.fail(err.message))
     }
   })
 

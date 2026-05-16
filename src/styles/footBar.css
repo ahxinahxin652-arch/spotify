@@ -83,7 +83,42 @@
 .controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+}
+
+/* 随机播放 & 循环播放按钮 (Spotify 风格) */
+.shuffle-btn,
+.repeat-btn {
+    position: relative;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.shuffle-btn.active,
+.repeat-btn.active {
+    color: var(--accent);
+}
+
+.shuffle-btn.active::after,
+.repeat-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+}
+
+.repeat-btn.active {
+    color: var(--accent);
+}
+
+/* 循环单曲模式下 "1" 文字颜色 */
+.repeat-btn svg text {
+    fill: var(--accent);
 }
 
 .ctrl-btn {

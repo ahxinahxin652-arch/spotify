@@ -25,9 +25,9 @@ async function handleFileInput(e) {
   addLog('info', `检测到 ${fileList.length} 个新文件，正在分析...`)
 
   const result = await window.electronAPI.scanFiles(filePaths)
-  if (result.success) {
+  if (result.success && result.data) {
     // 【优化】：将新文件追加到现有列表，并根据 path 去重
-    const newFiles = result.files.filter(nf =>
+    const newFiles = result.data.files.filter(nf =>
         !flacFiles.value.some(ef => ef.path === nf.path)
     )
     flacFiles.value = [...flacFiles.value, ...newFiles]
@@ -46,9 +46,9 @@ function handleDrop(e) {
   addLog('info', `拖拽识别中...`)
 
   window.electronAPI.scanFiles(filePaths).then(result => {
-    if (result.success) {
+    if (result.success && result.data) {
       // 【优化】：追加并去重[cite: 1]
-      const newFiles = result.files.filter(nf =>
+      const newFiles = result.data.files.filter(nf =>
           !flacFiles.value.some(ef => ef.path === nf.path)
       )
       flacFiles.value = [...flacFiles.value, ...newFiles]

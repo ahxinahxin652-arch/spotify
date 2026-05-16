@@ -23,8 +23,8 @@ async function loadTracks() {
   isLoading.value = true
   try {
     const result = await window.electronAPI.getWarehouseTracks(warehouseName.value)
-    if (result.success) {
-      tracks.value = result.tracks
+    if (result.success && result.data) {
+      tracks.value = result.data.tracks
     }
   } catch (err) {
     console.error('加载曲目失败:', err)

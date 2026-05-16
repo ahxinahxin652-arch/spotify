@@ -2,6 +2,10 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 const API_PORT = 3000
 
+/**
+ * 统一 API 请求封装
+ * 返回值统一为 ApiResult 格式: { success: boolean, data?: T, message?: string, error?: string }
+ */
 function apiFetch(url, options = {}) {
   return fetch(`http://localhost:${API_PORT}${url}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -11,22 +15,28 @@ function apiFetch(url, options = {}) {
 }
 
 // ========== 音乐仓库 API ==========
+
+/** @returns {Promise<{ success: boolean, data?: { warehouses: Array<{name: string, path: string, trackCount: number}> }, error?: string }>} */
 function getMusicWarehouses() {
   return apiFetch('/api/music/warehouses')
 }
 
+/** @returns {Promise<{ success: boolean, data?: { warehouse: {name: string, path: string, trackCount: number} }, error?: string }>} */
 function createMusicWarehouse(name) {
   return apiFetch('/api/music/warehouses', { method: 'POST', body: { name } })
 }
 
+/** @returns {Promise<{ success: boolean, data?: null, error?: string }>} */
 function deleteMusicWarehouse(name) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(name)}`, { method: 'DELETE' })
 }
 
+/** @returns {Promise<{ success: boolean, data?: { warehouseName: string, tracks: Array }, error?: string }>} */
 function getWarehouseTracks(warehouseName) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/tracks`)
 }
 
+/** @returns {Promise<{ success: boolean, data?: { imported: number, skipped: number }, error?: string }>} */
 function importFilesToWarehouse(warehouseName, filePaths) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/import`, {
     method: 'POST',
@@ -34,38 +44,43 @@ function importFilesToWarehouse(warehouseName, filePaths) {
   })
 }
 
-function getMusicWarehouseDir() {
-  return apiFetch('/api/music/warehouse-dir').then(r => r.success ? r.path : null)
+/** @returns {Promise<string|null>} */
+async function getMusicWarehouseDir() {
+  const r = await apiFetch('/api/music/warehouse-dir')
+  return r.success && r.data ? r.data.path : null
 }
 
 // ========== 格式转换 API ==========
+
+/** @returns {Promise<{ success: boolean, data?: { files: Array<{name: string, path: string, size: number}> }, error?: string }>} */
 function scanFiles(filePaths) {
   return apiFetch('/api/convert/scan', { method: 'POST', body: { filePaths } })
 }
 
+/** @returns {Promise<{ success: boolean, data?: null, message?: string, error?: string }>} */
 function startConvert({ files, outputPath }) {
   return apiFetch('/api/convert/start', { method: 'POST', body: { files, outputPath } })
 }
 
+/** @returns {Promise<string|null>} */
 async function selectDirectory() {
-  const res = await fetch(`http://localhost:${API_PORT}/api/convert/select-directory`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
-  })
-  const data = await res.json()
-  return data.success ? data.path : null
+  const data = await apiFetch('/api/convert/select-directory', { method: 'POST', body: {} })
+  return data.success && data.data ? data.data.path : null
 }
 
 // ========== 音乐解密 API ==========
+
+/** @returns {Promise<{ success: boolean, data?: { files: Array<{name: string, path: string, size: number}> }, error?: string }>} */
 function scanDecryptFiles(filePaths) {
   return apiFetch('/api/decrypt/scan', { method: 'POST', body: { filePaths } })
 }
 
+/** @returns {Promise<{ success: boolean, data?: null, message?: string, error?: string }>} */
 function startDecrypt({ files, outputPath }) {
   return apiFetch('/api/decrypt/start', { method: 'POST', body: { files, outputPath } })
 }
 
+/** @returns {Promise<{ success: boolean, data?: { outputPath: string, outputFileName: string }, error?: string }>} */
 function decryptFile({ inputPath, outputPath, outputFormat }) {
   return apiFetch('/api/decrypt/file', { method: 'POST', body: { inputPath, outputPath, outputFormat } })
 }
@@ -136,7 +151,6 @@ function onWindowMaximized(callback) { maximizedCallback = callback }
 // ========== 选择音频文件 ==========
 async function selectMusicFiles() {
   try {
-    // 👇 改为向主进程发送 invoke 请求，并等待主进程返回文件路径数组
     return await ipcRenderer.invoke('dialog:selectMusicFiles')
   } catch (err) {
     console.error('选择音频文件出错:', err)

@@ -25,8 +25,8 @@ async function handleFileInput(e) {
   addLog('info', `检测到 ${fileList.length} 个新文件，正在分析...`)
 
   const result = await window.electronAPI.scanDecryptFiles(filePaths)
-  if (result.success) {
-    const newFiles = result.files.filter(nf =>
+  if (result.success && result.data) {
+    const newFiles = result.data.files.filter(nf =>
         !files.value.some(ef => ef.path === nf.path)
     )
     files.value = [...files.value, ...newFiles]
@@ -45,8 +45,8 @@ function handleDrop(e) {
   addLog('info', `拖拽识别中...`)
 
   window.electronAPI.scanDecryptFiles(filePaths).then(result => {
-    if (result.success) {
-      const newFiles = result.files.filter(nf =>
+    if (result.success && result.data) {
+      const newFiles = result.data.files.filter(nf =>
           !files.value.some(ef => ef.path === nf.path)
       )
       files.value = [...files.value, ...newFiles]

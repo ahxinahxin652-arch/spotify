@@ -1,5 +1,7 @@
 const fs = require('fs')
 const path = require('path')
+const Track = require('../pojo/do/Track')
+const { WarehouseItemVO, ImportResultVO } = require('../pojo/vo/ResponseVOs')
 
 // ========== 音乐仓库 DAO ==========
 
@@ -13,7 +15,7 @@ function getMusicWarehouseRoot() {
 
 /**
  * 获取所有音乐库
- * @returns {Array<{name: string, path: string, trackCount: number}>}
+ * @returns {Array<import('../pojo/vo/ResponseVOs').WarehouseItemVO>}
  */
 function getAllWarehouses() {
   const root = getMusicWarehouseRoot()
@@ -29,11 +31,11 @@ function getAllWarehouses() {
       .map(e => {
         const warehousePath = path.join(root, e.name)
         const trackCount = countTracks(warehousePath)
-        return {
+        return new WarehouseItemVO({
           name: e.name,
           path: warehousePath,
           trackCount,
-        }
+        })
       })
   } catch (err) {
     return []
@@ -71,7 +73,7 @@ function countTracks(warehousePath) {
 /**
  * 创建音乐库
  * @param {string} name
- * @returns {{ success: boolean, warehouse?: { name, path, trackCount }, error?: string }}
+ * @returns {{ success: boolean, warehouse?: import('../pojo/vo/ResponseVOs').WarehouseItemVO, error?: string }}
  */
 function createWarehouse(name) {
   const root = getMusicWarehouseRoot()
@@ -85,11 +87,11 @@ function createWarehouse(name) {
     }
     return {
       success: true,
-      warehouse: {
+      warehouse: new WarehouseItemVO({
         name,
         path: warehousePath,
         trackCount: 0,
-      },
+      }),
     }
   } catch (err) {
     return { success: false, error: err.message }
@@ -110,7 +112,7 @@ function deleteWarehouse(name) {
 /**
  * 获取音乐库下的所有曲目
  * @param {string} warehouseName
- * @returns {{ success: boolean, tracks?: Array, error?: string }}
+ * @returns {{ success: boolean, tracks?: Array<import('../pojo/do/Track')>, warehouseName?: string, error?: string }}
  */
 function getWarehouseTracks(warehouseName) {
   const root = getMusicWarehouseRoot()
@@ -124,7 +126,7 @@ function getWarehouseTracks(warehouseName) {
   try {
     const tracks = []
     scanMusicDir(musicDir, tracks, warehouseName)
-    return { success: true, tracks }
+    return { success: true, warehouseName, tracks }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -132,6 +134,9 @@ function getWarehouseTracks(warehouseName) {
 
 /**
  * 递归扫描音乐目录
+ * @param {string} dir
+ * @param {Array<import('../pojo/do/Track')>} result
+ * @param {string} warehouseName
  */
 function scanMusicDir(dir, result, warehouseName) {
   try {
@@ -147,12 +152,12 @@ function scanMusicDir(dir, result, warehouseName) {
         if (SUPPORTED_EXTENSIONS.includes(ext)) {
           try {
             const stats = fs.statSync(fullPath)
-            result.push({
+            result.push(Track.fromFileEntry({
               name: entry.name,
               path: fullPath,
               size: stats.size,
               modified: stats.mtimeMs,
-            })
+            }, warehouseName))
           } catch (e) {
             // 忽略无法读取的文件
           }
@@ -168,6 +173,7 @@ function scanMusicDir(dir, result, warehouseName) {
  * 导入文件到音乐库
  * @param {string} warehouseName
  * @param {string[]} filePaths
+ * @returns {{ success: boolean, result?: import('../pojo/vo/ResponseVOs').ImportResultVO, error?: string }}
  */
 function importFilesToWarehouse(warehouseName, filePaths) {
   const root = getMusicWarehouseRoot()
@@ -211,7 +217,10 @@ function importFilesToWarehouse(warehouseName, filePaths) {
     }
   }
 
-  return { success: true, imported: imported.length, skipped: skipped.length }
+  return {
+    success: true,
+    result: new ImportResultVO({ imported: imported.length, skipped: skipped.length }),
+  }
 }
 
 /**

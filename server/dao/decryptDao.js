@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const { ScanFileItem, DecryptFileResultVO } = require('../pojo/vo/ResponseVOs')
 
 // ========== 音乐解密 DAO ==========
 
@@ -13,7 +14,7 @@ const DECRYPTABLE_EXTS = [
 /**
  * 扫描可解密的文件
  * @param {string[]} filePaths
- * @returns {{ success: boolean, files?: Array, error?: string }}
+ * @returns {{ success: boolean, files?: Array<import('../pojo/vo/ResponseVOs').ScanFileItem>, error?: string }}
  */
 function scanDecryptFiles(filePaths) {
   const decryptableFiles = []
@@ -26,11 +27,11 @@ function scanDecryptFiles(filePaths) {
       } else if (stats.isFile()) {
         const ext = '.' + filePath.split('.').pop().toLowerCase()
         if (DECRYPTABLE_EXTS.includes(ext)) {
-          decryptableFiles.push({
+          decryptableFiles.push(new ScanFileItem({
             name: path.basename(filePath),
             path: filePath,
             size: stats.size,
-          })
+          }))
         }
       }
     } catch (e) {
@@ -55,11 +56,11 @@ function scanDir(dir, result) {
         const ext = '.' + entry.name.split('.').pop().toLowerCase()
         if (DECRYPTABLE_EXTS.includes(ext)) {
           const stats = fs.statSync(fullPath)
-          result.push({
+          result.push(new ScanFileItem({
             name: entry.name,
             path: fullPath,
             size: stats.size,
-          })
+          }))
         }
       }
     }
@@ -88,13 +89,14 @@ function isDecryptable(filePath) {
  * @param {string} inputPath
  * @param {string} outputPath
  * @param {string} outputFormat 'mp3' | 'flac' | 'ogg'
+ * @returns {Promise<{ success: boolean, result?: import('../pojo/vo/ResponseVOs').DecryptFileResultVO, error?: string }>}
  */
 async function decryptFile(inputPath, outputPath, outputFormat) {
   const ext = path.extname(inputPath).toLowerCase()
   const fileName = path.basename(inputPath, ext)
 
   // 根据格式选择不同的解密器
-  let result = { success: false, outputPath: '', outputFileName: '', error: '不支持的格式' }
+  let result = { success: false, error: '不支持的格式' }
 
   try {
     switch (ext) {
@@ -157,7 +159,7 @@ async function decryptKgm(inputPath, outputPath, fileName, outputFormat) {
 
   const outputFile = path.join(outputPath, `${fileName}.${ext}`)
   fs.writeFileSync(outputFile, decrypted)
-  return { success: true, outputPath, outputFileName: `${fileName}.${ext}` }
+  return { success: true, result: new DecryptFileResultVO({ outputPath, outputFileName: `${fileName}.${ext}` }) }
 }
 
 // ========== QQ音乐解密 ==========
@@ -178,7 +180,7 @@ async function decryptQmc(inputPath, outputPath, fileName, outputFormat) {
 
   const outputFile = path.join(outputPath, `${fileName}.${ext}`)
   fs.writeFileSync(outputFile, decrypted)
-  return { success: true, outputPath, outputFileName: `${fileName}.${ext}` }
+  return { success: true, result: new DecryptFileResultVO({ outputPath, outputFileName: `${fileName}.${ext}` }) }
 }
 
 // ========== 网易云解密 ==========
@@ -201,7 +203,7 @@ async function decryptNcm(inputPath, outputPath, fileName, outputFormat) {
 
   const outputFile = path.join(outputPath, `${fileName}.${ext}`)
   fs.writeFileSync(outputFile, decrypted)
-  return { success: true, outputPath, outputFileName: `${fileName}.${ext}` }
+  return { success: true, result: new DecryptFileResultVO({ outputPath, outputFileName: `${fileName}.${ext}` }) }
 }
 
 // ========== 酷我解密 ==========
@@ -218,7 +220,7 @@ async function decryptKwm(inputPath, outputPath, fileName, outputFormat) {
 
   const outputFile = path.join(outputPath, `${fileName}.${ext}`)
   fs.writeFileSync(outputFile, decrypted)
-  return { success: true, outputPath, outputFileName: `${fileName}.${ext}` }
+  return { success: true, result: new DecryptFileResultVO({ outputPath, outputFileName: `${fileName}.${ext}` }) }
 }
 
 // ========== 工具函数 ==========
