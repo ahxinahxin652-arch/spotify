@@ -1,6 +1,6 @@
 {
   "name": "music-workspace",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Music Workspace - 解密 + 转换 + 播放",
   "main": "electron/main.js",
   "author": "",
@@ -40,7 +40,13 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "server/**/*"
+      "server/**/*",
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/engines/**/*"
     ],
     "win": {
       "target": "nsis"
