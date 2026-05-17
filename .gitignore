@@ -23,3 +23,15 @@ release
 *.njsproj
 *.sln
 *.sw?
+
+/src/generated/prisma
+/server/generated/prisma
+
+# Prisma database files
+prisma/*.db
+prisma/*.db-journal
+*.db
+*.db-journal
+
+# Environment
+.env

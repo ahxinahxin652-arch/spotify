@@ -1,0 +1,46 @@
+// Prisma Schema for FlacConverter
+// 使用 SQLite 作为本地数据库
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model MusicLibrary {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  coverPath   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tracks Track[]
+
+  @@map("music_libraries")
+}
+
+model Track {
+  id          String   @id @default(uuid())
+  libraryId   String
+  name        String
+  title       String?
+  artist      String?
+  album       String?
+  duration    Float?
+  path        String   @unique
+  format      String
+  size        Int      @default(0)
+  modified    Float?
+  isEncrypted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  library MusicLibrary @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@index([libraryId])
+  @@map("tracks")
+}

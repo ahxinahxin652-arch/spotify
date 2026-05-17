@@ -60,37 +60,48 @@ function startExpressServer() {
   expressApp.use(express.json({ limit: '500mb' }))
   expressApp.use(express.urlencoded({ extended: true, limit: '500mb' }))
 
-  // ---- 音乐仓库 API ----
-  const musicDao = require('../server/dao/musicDao')
+  // ---- 音乐仓库 API (所有 music 路由已改为 async) ----
   const musicService = require('../server/service/musicService')
 
-  expressApp.get('/api/music/warehouses', (req, res) => {
-    res.json(musicService.getMusicWarehouses())
+  expressApp.get('/api/music/warehouses', async (req, res) => {
+    res.json(await musicService.getMusicWarehouses())
   })
 
-  expressApp.post('/api/music/warehouses', (req, res) => {
+  expressApp.post('/api/music/warehouses', async (req, res) => {
     const { name } = req.body
-    res.json(musicService.createMusicWarehouse(name))
+    res.json(await musicService.createMusicWarehouse(name))
   })
 
-  expressApp.delete('/api/music/warehouses/:name', (req, res) => {
+  expressApp.delete('/api/music/warehouses/:name', async (req, res) => {
     const { name } = req.params
-    res.json(musicService.deleteMusicWarehouse(decodeURIComponent(name)))
+    res.json(await musicService.deleteMusicWarehouse(decodeURIComponent(name)))
   })
 
-  expressApp.get('/api/music/warehouses/:name/tracks', (req, res) => {
+  expressApp.get('/api/music/warehouses/:name/tracks', async (req, res) => {
     const { name } = req.params
-    res.json(musicService.getWarehouseTracks(decodeURIComponent(name)))
+    res.json(await musicService.getWarehouseTracks(decodeURIComponent(name)))
   })
 
-  expressApp.post('/api/music/warehouses/:name/import', (req, res) => {
+  expressApp.post('/api/music/warehouses/:name/import', async (req, res) => {
     const { name } = req.params
     const { filePaths } = req.body
-    res.json(musicService.importFilesToWarehouse(decodeURIComponent(name), filePaths))
+    res.json(await musicService.importFilesToWarehouse(decodeURIComponent(name), filePaths))
   })
 
   expressApp.get('/api/music/warehouse-dir', (req, res) => {
     res.json(ApiResult.ok({ path: musicService.getMusicWarehouseDir() }))
+  })
+
+  // 校验曲目是否可播放（播放前调用，文件不存在则自动清理数据库）
+  expressApp.post('/api/music/validate-track', async (req, res) => {
+    const { trackId, filePath } = req.body
+    res.json(await musicService.validateTrackPlayable(trackId, filePath))
+  })
+
+  // 同步音乐库（文件系统 <-> 数据库一致性）
+  expressApp.post('/api/music/warehouses/:name/sync', async (req, res) => {
+    const { name } = req.params
+    res.json(await musicService.syncWarehouse(decodeURIComponent(name)))
   })
 
   // ---- 格式转换 API ----
@@ -235,6 +246,11 @@ function setupWindowControls() {
   // 读取文件为 ArrayBuffer
   ipcMain.on('read-file', (event, { key, filePath }) => {
     try {
+      // 检查文件是否存在
+      if (!fs.existsSync(filePath)) {
+        event.reply('read-file-result', { key, error: '文件不存在或已被删除' })
+        return
+      }
       const buffer = fs.readFileSync(filePath)
       const ext = path.extname(filePath).toLowerCase()
       const mimeMap = {
@@ -257,9 +273,22 @@ function setupWindowControls() {
 }
 
 // ========== 启动 ==========
-app.whenReady().then(() => {
+const { initDatabase, autoMigrate, disconnectDatabase } = require('../server/dao/db')
+
+app.whenReady().then(async () => {
+  // 1. 初始化数据库
+  initDatabase()
+
+  // 2. 自动执行建表迁移（确保运行时数据库表结构存在）
+  await autoMigrate()
+
+  // 2. 启动 Express 服务器
   startExpressServer()
+
+  // 3. 创建窗口
   createWindow()
+
+  // 4. 设置 IPC
   setupWindowControls()
 
   app.on('activate', () => {
@@ -267,7 +296,9 @@ app.whenReady().then(() => {
   })
 })
 
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  // 断开数据库连接
+  await disconnectDatabase()
   if (expressServer) expressServer.close()
   if (process.platform !== 'darwin') app.quit()
 })
