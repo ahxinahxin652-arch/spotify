@@ -6,14 +6,16 @@ let prisma = null
 
 /**
  * 获取应用数据根目录
- * - 安装后 (isPackaged): {userData}/data  (如 C:\Users\xxx\AppData\Roaming\Spotify\data)
+ * - 安装后 (isPackaged): exe 同级目录下的 data 文件夹 (如 D:\Music\Satisfy\data)
  * - dev 模式: ~/musicWarehouse  (如 C:\Users\xxx\musicWarehouse)
  * @returns {string}
  */
 function getAppDataRoot() {
   const { app } = require('electron')
   if (app.isPackaged) {
-    return path.join(app.getPath('userData'), 'data')
+    // app.getPath('exe') 返回 exe 的完整路径，如 D:\Music\Satisfy\Satisfy.exe
+    // 取其父目录再拼 data
+    return path.join(path.dirname(app.getPath('exe')), 'data')
   }
   return path.join(app.getPath('home'), 'musicWarehouse')
 }
