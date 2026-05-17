@@ -24,14 +24,15 @@ release
 *.sln
 *.sw?
 
+# Prisma (旧版遗留路径，已不再使用)
 /src/generated/prisma
 /server/generated/prisma
 
-# Prisma database files
+# Prisma database files (本地数据库，不需要上传)
 prisma/*.db
 prisma/*.db-journal
 *.db
 *.db-journal
 
-# Environment
+# Environment (包含数据库连接串等敏感信息)
 .env
