@@ -46,6 +46,11 @@ async function playTrack(track, playlist = [], index = -1) {
   stopCurrent()
   player.setTrack(track, playlist, index)
 
+  // 更新音乐库的最近播放时间
+  if (track.warehouse) {
+    window.electronAPI.updateRecentPlayed(track.warehouse).catch(() => {})
+  }
+
   // 通过 Electron IPC 读取文件为 Blob，绕过 file:// 限制
   let audioBlob
   try {

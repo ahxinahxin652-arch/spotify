@@ -22,14 +22,20 @@ class WarehouseListVO {
 class WarehouseItemVO {
   /**
    * @param {Object} params
-   * @param {string} params.name        - 仓库名称 (目录名)
-   * @param {string} params.path        - 仓库绝对路径
-   * @param {number} params.trackCount  - 曲目数量
+   * @param {string} params.name               - 仓库名称 (目录名)
+   * @param {string} params.path               - 仓库绝对路径
+   * @param {number} params.trackCount         - 曲目数量
+   * @param {string} [params.description]      - 描述信息
+   * @param {string} [params.coverPath]        - 封面 Base64
+   * @param {Date|string|null} [params.recentPlayedAt] - 最近播放时间
    */
-  constructor({ name, path, trackCount = 0 }) {
+  constructor({ name, path, trackCount = 0, description = '', coverPath = '', recentPlayedAt = null }) {
     this.name = name
     this.path = path
     this.trackCount = trackCount
+    this.description = description
+    this.coverPath = coverPath
+    this.recentPlayedAt = recentPlayedAt
   }
 }
 

@@ -16,9 +16,10 @@ function apiFetch(url, options = {}) {
 
 // ========== 音乐仓库 API ==========
 
-/** @returns {Promise<{ success: boolean, data?: { warehouses: Array<{name: string, path: string, trackCount: number}> }, error?: string }>} */
-function getMusicWarehouses() {
-  return apiFetch('/api/music/warehouses')
+/** @returns {Promise<{ success: boolean, data?: { warehouses: Array<{name: string, path: string, trackCount: number, description: string, coverPath: string, recentPlayedAt: string|null}> }, error?: string }>} */
+function getMusicWarehouses(sortBy) {
+  const query = sortBy ? `?sortBy=${encodeURIComponent(sortBy)}` : ''
+  return apiFetch(`/api/music/warehouses${query}`)
 }
 
 /** @returns {Promise<{ success: boolean, data?: { warehouse: {name: string, path: string, trackCount: number} }, error?: string }>} */
@@ -29,6 +30,16 @@ function createMusicWarehouse(name) {
 /** @returns {Promise<{ success: boolean, data?: null, error?: string }>} */
 function deleteMusicWarehouse(name) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(name)}`, { method: 'DELETE' })
+}
+
+/** @returns {Promise<{ success: boolean, data?: { warehouse: Object }, error?: string }>} */
+function updateMusicWarehouse(oldName, updates) {
+  return apiFetch(`/api/music/warehouses/${encodeURIComponent(oldName)}`, { method: 'PUT', body: updates })
+}
+
+/** @returns {Promise<{ success: boolean }>} */
+function updateRecentPlayed(warehouseName) {
+  return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/recent-played`, { method: 'POST', body: {} })
 }
 
 /** @returns {Promise<{ success: boolean, data?: { warehouseName: string, tracks: Array }, error?: string }>} */
@@ -163,7 +174,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 音乐仓库
   getMusicWarehouses,
   createMusicWarehouse,
+  updateMusicWarehouse,
   deleteMusicWarehouse,
+  updateRecentPlayed,
   getWarehouseTracks,
   importFilesToWarehouse,
   getMusicWarehouseDir,

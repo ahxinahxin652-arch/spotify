@@ -161,12 +161,19 @@ function startExpressServer() {
   const musicService = require('../server/service/musicService')
 
   expressApp.get('/api/music/warehouses', async (req, res) => {
-    res.json(await musicService.getMusicWarehouses())
+    const sortBy = req.query.sortBy || 'recent-played'
+    res.json(await musicService.getMusicWarehouses(sortBy))
   })
 
   expressApp.post('/api/music/warehouses', async (req, res) => {
     const { name } = req.body
     res.json(await musicService.createMusicWarehouse(name))
+  })
+
+  expressApp.put('/api/music/warehouses/:name', async (req, res) => {
+    const { name } = req.params
+    const updates = req.body
+    res.json(await musicService.updateMusicWarehouse(decodeURIComponent(name), updates))
   })
 
   expressApp.delete('/api/music/warehouses/:name', async (req, res) => {
@@ -199,6 +206,12 @@ function startExpressServer() {
   expressApp.post('/api/music/warehouses/:name/sync', async (req, res) => {
     const { name } = req.params
     res.json(await musicService.syncWarehouse(decodeURIComponent(name)))
+  })
+
+  // 更新最近播放时间（播放歌曲时调用）
+  expressApp.post('/api/music/warehouses/:name/recent-played', async (req, res) => {
+    const { name } = req.params
+    res.json(await musicService.updateRecentPlayed(decodeURIComponent(name)))
   })
 
   // ---- 格式转换 API ----

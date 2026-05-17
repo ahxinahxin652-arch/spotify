@@ -124,6 +124,7 @@ exports.Prisma.MusicLibraryScalarFieldEnum = {
   name: 'name',
   description: 'description',
   coverPath: 'coverPath',
+  recentPlayedAt: 'recentPlayedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

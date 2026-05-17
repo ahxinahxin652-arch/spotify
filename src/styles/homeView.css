@@ -21,6 +21,106 @@
     justify-content: space-between;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ========== 自定义排序下拉 ========== */
+.sort-dropdown {
+    position: relative;
+}
+
+.sort-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: var(--text-h);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.sort-trigger:hover {
+    border-color: var(--accent);
+    background: var(--surface-3);
+}
+
+.sort-arrow {
+    transition: transform 0.25s ease;
+    opacity: 0.6;
+}
+
+.sort-arrow.open {
+    transform: rotate(180deg);
+}
+
+.sort-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+}
+
+.sort-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    outline: none;
+}
+
+.sort-option:hover {
+    background: var(--surface-2);
+    color: var(--text-h);
+}
+
+.sort-option.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 500;
+}
+
+/* 下拉动画 */
+.dropdown-enter-active {
+    transition: all 0.2s ease;
+}
+
+.dropdown-leave-active {
+    transition: all 0.15s ease;
+}
+
+.dropdown-enter-from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+}
+
+.dropdown-leave-to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+}
+
 .section-title {
     font-size: 16px;
     font-weight: 600;
@@ -94,6 +194,14 @@
     justify-content: center;
     color: var(--accent);
     margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
 }
 
 .warehouse-info {
@@ -112,6 +220,31 @@
     font-size: 12px;
     color: var(--text);
     opacity: 0.7;
+}
+
+.btn-edit {
+    position: absolute;
+    top: 8px;
+    right: 32px;
+    background: var(--surface-2);
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: all 0.15s;
+}
+
+.warehouse-card:hover .btn-edit {
+    opacity: 1;
+}
+
+.btn-edit:hover {
+    background: var(--accent);
+    color: #fff;
 }
 
 .btn-delete {
@@ -244,6 +377,112 @@
     font-weight: 600;
     color: var(--text-h);
     margin-bottom: 16px;
+}
+
+/* ========== 编辑音乐库弹窗 ========== */
+.edit-dialog {
+    width: 460px;
+}
+
+.edit-body {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* 左侧封面区域 */
+.edit-cover-area {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+    background: var(--surface-2);
+    cursor: pointer;
+}
+
+.edit-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.edit-cover-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--text);
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+
+.edit-cover-area:hover .edit-cover-empty {
+    opacity: 1;
+}
+
+.cover-add-text {
+    font-size: 11px;
+}
+
+/* 有封面时 hover 遮罩 */
+.edit-cover-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.cover-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.cover-remove-btn:hover {
+    background: var(--error, #e74c3c);
+}
+
+.cover-change-text {
+    font-size: 11px;
+    color: #fff;
+    cursor: pointer;
+}
+
+/* 右侧名称 + 描述 */
+.edit-fields {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-input {
+    width: 100% !important;
+}
+
+/* 底部 */
+.edit-footer {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .dialog-input {

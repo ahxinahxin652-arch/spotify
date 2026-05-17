@@ -6,10 +6,11 @@ const ApiResult = require('../pojo/vo/ApiResult')
 
 /**
  * 获取所有音乐库
+ * @param {string} [sortBy] - 排序方式: 'recent-played' | 'recent-updated' | 'name'
  * @returns {Promise<import('../pojo/vo/ApiResult')<{ warehouses: Array<import('../pojo/vo/ResponseVOs').WarehouseItemVO> }>>}
  */
-async function getMusicWarehouses() {
-  const warehouses = await musicDao.getAllWarehouses()
+async function getMusicWarehouses(sortBy) {
+  const warehouses = await musicDao.getAllWarehouses(sortBy)
   return ApiResult.ok({ warehouses })
 }
 
@@ -30,6 +31,42 @@ async function createMusicWarehouse(name) {
   }
 
   const result = await musicDao.createWarehouse(name.trim())
+  if (!result.success) {
+    return ApiResult.fail(result.error)
+  }
+  return ApiResult.ok({ warehouse: result.warehouse })
+}
+
+/**
+ * 更新音乐库信息
+ * @param {string} oldName - 原始名称
+ * @param {Object} updates - 要更新的字段 { name?, description?, coverPath? }
+ * @returns {Promise<import('../pojo/vo/ApiResult')<{ warehouse: import('../pojo/vo/ResponseVOs').WarehouseItemVO }>>}
+ */
+async function updateMusicWarehouse(oldName, updates) {
+  if (!updates || Object.keys(updates).length === 0) {
+    return ApiResult.fail('没有要更新的内容')
+  }
+
+  // 如果要改名，做校验
+  if (updates.name !== undefined) {
+    const newName = updates.name.trim()
+    if (!newName) {
+      return ApiResult.fail('音乐库名称不能为空')
+    }
+    const invalidChars = /[<>:"/\\|?*]/
+    if (invalidChars.test(newName)) {
+      return ApiResult.fail('音乐库名称包含非法字符')
+    }
+    updates.name = newName
+  }
+
+  // 描述处理
+  if (updates.description !== undefined) {
+    updates.description = (updates.description || '').trim()
+  }
+
+  const result = await musicDao.updateWarehouse(oldName, updates)
   if (!result.success) {
     return ApiResult.fail(result.error)
   }
@@ -93,7 +130,6 @@ function getMusicWarehouseDir() {
  */
 async function validateTrackPlayable(trackId, filePath) {
   if (!fs.existsSync(filePath)) {
-    // 文件不存在，从数据库清除该记录
     try {
       const { getDb } = require('../dao/db')
       const db = getDb()
@@ -117,13 +153,25 @@ async function syncWarehouse(warehouseName) {
   return ApiResult.ok(result)
 }
 
+/**
+ * 更新音乐库的最近播放时间
+ * @param {string} warehouseName
+ * @returns {Promise<import('../pojo/vo/ApiResult')<null>>}
+ */
+async function updateRecentPlayed(warehouseName) {
+  await musicDao.updateRecentPlayed(warehouseName)
+  return ApiResult.ok(null)
+}
+
 module.exports = {
   getMusicWarehouses,
   createMusicWarehouse,
+  updateMusicWarehouse,
   deleteMusicWarehouse,
   getWarehouseTracks,
   importFilesToWarehouse,
   getMusicWarehouseDir,
   validateTrackPlayable,
   syncWarehouse,
+  updateRecentPlayed,
 }

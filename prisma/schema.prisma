@@ -12,12 +12,13 @@ datasource db {
 }
 
 model MusicLibrary {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  coverPath   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String    @id @default(uuid())
+  name           String    @unique
+  description    String?
+  coverPath      String?
+  recentPlayedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   tracks Track[]
 

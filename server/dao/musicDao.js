@@ -51,9 +51,10 @@ function getMusicWarehouseRoot() {
 /**
  * 获取所有音乐库
  * 优先从 SQLite 读取，同时校验文件夹是否存在
+ * @param {string} [sortBy] - 排序方式: 'recent-played' | 'recent-updated' | 'name'
  * @returns {Promise<Array<import('../pojo/vo/ResponseVOs').WarehouseItemVO>>}
  */
-async function getAllWarehouses() {
+async function getAllWarehouses(sortBy = 'recent-played') {
   const db = getDb()
   const root = getMusicWarehouseRoot()
 
@@ -62,11 +63,26 @@ async function getAllWarehouses() {
     fs.mkdirSync(root, { recursive: true })
   }
 
+  // 根据排序方式确定 orderBy
+  let orderBy
+  switch (sortBy) {
+    case 'recent-updated':
+      orderBy = { updatedAt: 'desc' }
+      break
+    case 'name':
+      orderBy = { name: 'asc' }
+      break
+    case 'recent-played':
+    default:
+      orderBy = { recentPlayedAt: { sort: 'desc', nulls: 'last' } }
+      break
+  }
+
   const libraries = await db.musicLibrary.findMany({
     include: {
       _count: { select: { tracks: true } },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy,
   })
 
   const result = []
@@ -85,6 +101,9 @@ async function getAllWarehouses() {
       name: lib.name,
       path: warehousePath,
       trackCount: lib._count.tracks,
+      description: lib.description || '',
+      coverPath: lib.coverPath || '',
+      recentPlayedAt: lib.recentPlayedAt,
     }))
   }
 
@@ -457,6 +476,89 @@ function scanMusicDirForSync(dir, result) {
   }
 }
 
+/**
+ * 更新音乐库信息
+ * @param {string} oldName - 原始名称（用于查找记录）
+ * @param {Object} updates - 要更新的字段
+ * @param {string} [updates.name] - 新名称
+ * @param {string} [updates.description] - 新描述
+ * @param {string} [updates.coverPath] - 新封面 Base64
+ * @returns {Promise<{ success: boolean, warehouse?: import('../pojo/vo/ResponseVOs').WarehouseItemVO, error?: string }>}
+ */
+async function updateWarehouse(oldName, updates) {
+  const db = getDb()
+  const root = getMusicWarehouseRoot()
+
+  try {
+    const library = await db.musicLibrary.findUnique({ where: { name: oldName } })
+    if (!library) {
+      return { success: false, error: `音乐库 "${oldName}" 不存在` }
+    }
+
+    // 如果要改名，需要重命名文件夹
+    const needRename = updates.name && updates.name !== oldName
+    if (needRename) {
+      const oldPath = path.join(root, oldName)
+      const newPath = path.join(root, updates.name)
+      // 检查新名称是否已存在文件夹
+      if (fs.existsSync(newPath)) {
+        return { success: false, error: `音乐库名 "${updates.name}" 已存在` }
+      }
+      // 重命名文件夹
+      fs.renameSync(oldPath, newPath)
+    }
+
+    // 构建更新数据
+    const data = {}
+    if (updates.name !== undefined) data.name = updates.name
+    if (updates.description !== undefined) data.description = updates.description
+    if (updates.coverPath !== undefined) data.coverPath = updates.coverPath
+
+    const updated = await db.musicLibrary.update({
+      where: { id: library.id },
+      data,
+      include: { _count: { select: { tracks: true } } },
+    })
+
+    const warehousePath = path.join(root, updated.name)
+    return {
+      success: true,
+      warehouse: new WarehouseItemVO({
+        name: updated.name,
+        path: warehousePath,
+        trackCount: updated._count.tracks,
+        description: updated.description || '',
+        coverPath: updated.coverPath || '',
+        recentPlayedAt: updated.recentPlayedAt,
+      }),
+    }
+  } catch (err) {
+    // 名字唯一性冲突
+    if (err.code === 'P2002') {
+      return { success: false, error: `音乐库名已存在` }
+    }
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 更新音乐库的最近播放时间
+ * @param {string} warehouseName - 音乐库名称
+ * @returns {Promise<{ success: boolean }>}
+ */
+async function updateRecentPlayed(warehouseName) {
+  const db = getDb()
+  try {
+    await db.musicLibrary.update({
+      where: { name: warehouseName },
+      data: { recentPlayedAt: new Date() },
+    })
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
 module.exports = {
   getMusicWarehouseRoot,
   getAllWarehouses,
@@ -466,4 +568,6 @@ module.exports = {
   importFilesToWarehouse,
   getMusicWarehouseDir,
   syncWarehouse,
+  updateWarehouse,
+  updateRecentPlayed,
 }

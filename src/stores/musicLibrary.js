@@ -3,13 +3,14 @@ import { ref } from 'vue'
 
 export const useMusicLibraryStore = defineStore('musicLibrary', () => {
   // ---- 状态 ----
-  const warehouses = ref([])           // 音乐库列表 [{ name, path, trackCount }]
+  const warehouses = ref([])           // 音乐库列表 [{ name, path, trackCount, description, coverPath, recentPlayedAt }]
   const currentWarehouse = ref(null)    // 当前音乐库
+  const sortBy = ref('recent-played')   // 排序方式: 'recent-played' | 'recent-updated' | 'name'
 
   // ---- Actions ----
   async function loadWarehouses() {
     try {
-      const result = await window.electronAPI.getMusicWarehouses()
+      const result = await window.electronAPI.getMusicWarehouses(sortBy.value)
       if (result.success && result.data) {
         warehouses.value = result.data.warehouses
       }
@@ -23,12 +24,29 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
       const result = await window.electronAPI.createMusicWarehouse(name)
       if (result.success && result.data) {
         warehouses.value.push(result.data.warehouse)
-        return true
+        return { success: true }
       }
-      return false
+      return { success: false, error: result.error || '创建失败' }
     } catch (err) {
       console.error('创建音乐库失败:', err)
-      return false
+      return { success: false, error: err.message }
+    }
+  }
+
+  async function updateWarehouse(oldName, updates) {
+    try {
+      const result = await window.electronAPI.updateMusicWarehouse(oldName, updates)
+      if (result.success && result.data) {
+        const idx = warehouses.value.findIndex(w => w.name === oldName)
+        if (idx !== -1) {
+          warehouses.value[idx] = result.data.warehouse
+        }
+        return { success: true, warehouse: result.data.warehouse }
+      }
+      return { success: false, error: result.error || '更新失败' }
+    } catch (err) {
+      console.error('更新音乐库失败:', err)
+      return { success: false, error: err.message }
     }
   }
 
@@ -50,12 +68,20 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
     currentWarehouse.value = warehouse
   }
 
+  function setSortBy(newSort) {
+    sortBy.value = newSort
+    loadWarehouses()
+  }
+
   return {
     warehouses,
     currentWarehouse,
+    sortBy,
     loadWarehouses,
     createWarehouse,
+    updateWarehouse,
     deleteWarehouse,
     setCurrentWarehouse,
+    setSortBy,
   }
 })

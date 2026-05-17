@@ -68,10 +68,18 @@ async function autoMigrate() {
       "name" TEXT NOT NULL,
       "description" TEXT,
       "coverPath" TEXT,
+      "recentPlayedAt" DATETIME,
       "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME NOT NULL
     )
   `)
+
+  // 如果表已存在但缺少 recentPlayedAt 列（从旧版本升级），添加它
+  try {
+    await db.$executeRawUnsafe(`ALTER TABLE "music_libraries" ADD COLUMN "recentPlayedAt" DATETIME`)
+  } catch (e) {
+    // 列已存在，忽略错误
+  }
 
   await db.$executeRawUnsafe(`
     CREATE UNIQUE INDEX IF NOT EXISTS "music_libraries_name_key" ON "music_libraries"("name")

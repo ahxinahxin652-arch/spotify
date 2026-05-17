@@ -974,6 +974,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     coverPath: string | null
+    recentPlayedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -983,6 +984,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     coverPath: string | null
+    recentPlayedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -992,6 +994,7 @@ export namespace Prisma {
     name: number
     description: number
     coverPath: number
+    recentPlayedAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1003,6 +1006,7 @@ export namespace Prisma {
     name?: true
     description?: true
     coverPath?: true
+    recentPlayedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1012,6 +1016,7 @@ export namespace Prisma {
     name?: true
     description?: true
     coverPath?: true
+    recentPlayedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1021,6 +1026,7 @@ export namespace Prisma {
     name?: true
     description?: true
     coverPath?: true
+    recentPlayedAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -1103,6 +1109,7 @@ export namespace Prisma {
     name: string
     description: string | null
     coverPath: string | null
+    recentPlayedAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: MusicLibraryCountAggregateOutputType | null
@@ -1129,6 +1136,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     coverPath?: boolean
+    recentPlayedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tracks?: boolean | MusicLibrary$tracksArgs<ExtArgs>
@@ -1140,6 +1148,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     coverPath?: boolean
+    recentPlayedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["musicLibrary"]>
@@ -1149,6 +1158,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     coverPath?: boolean
+    recentPlayedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -1169,6 +1179,7 @@ export namespace Prisma {
       name: string
       description: string | null
       coverPath: string | null
+      recentPlayedAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["musicLibrary"]>
@@ -1569,6 +1580,7 @@ export namespace Prisma {
     readonly name: FieldRef<"MusicLibrary", 'String'>
     readonly description: FieldRef<"MusicLibrary", 'String'>
     readonly coverPath: FieldRef<"MusicLibrary", 'String'>
+    readonly recentPlayedAt: FieldRef<"MusicLibrary", 'DateTime'>
     readonly createdAt: FieldRef<"MusicLibrary", 'DateTime'>
     readonly updatedAt: FieldRef<"MusicLibrary", 'DateTime'>
   }
@@ -3014,6 +3026,7 @@ export namespace Prisma {
     name: 'name',
     description: 'description',
     coverPath: 'coverPath',
+    recentPlayedAt: 'recentPlayedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -3108,6 +3121,7 @@ export namespace Prisma {
     name?: StringFilter<"MusicLibrary"> | string
     description?: StringNullableFilter<"MusicLibrary"> | string | null
     coverPath?: StringNullableFilter<"MusicLibrary"> | string | null
+    recentPlayedAt?: DateTimeNullableFilter<"MusicLibrary"> | Date | string | null
     createdAt?: DateTimeFilter<"MusicLibrary"> | Date | string
     updatedAt?: DateTimeFilter<"MusicLibrary"> | Date | string
     tracks?: TrackListRelationFilter
@@ -3118,6 +3132,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     coverPath?: SortOrderInput | SortOrder
+    recentPlayedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     tracks?: TrackOrderByRelationAggregateInput
@@ -3131,6 +3146,7 @@ export namespace Prisma {
     NOT?: MusicLibraryWhereInput | MusicLibraryWhereInput[]
     description?: StringNullableFilter<"MusicLibrary"> | string | null
     coverPath?: StringNullableFilter<"MusicLibrary"> | string | null
+    recentPlayedAt?: DateTimeNullableFilter<"MusicLibrary"> | Date | string | null
     createdAt?: DateTimeFilter<"MusicLibrary"> | Date | string
     updatedAt?: DateTimeFilter<"MusicLibrary"> | Date | string
     tracks?: TrackListRelationFilter
@@ -3141,6 +3157,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     coverPath?: SortOrderInput | SortOrder
+    recentPlayedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: MusicLibraryCountOrderByAggregateInput
@@ -3156,6 +3173,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"MusicLibrary"> | string
     description?: StringNullableWithAggregatesFilter<"MusicLibrary"> | string | null
     coverPath?: StringNullableWithAggregatesFilter<"MusicLibrary"> | string | null
+    recentPlayedAt?: DateTimeNullableWithAggregatesFilter<"MusicLibrary"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"MusicLibrary"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"MusicLibrary"> | Date | string
   }
@@ -3267,6 +3285,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     coverPath?: string | null
+    recentPlayedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     tracks?: TrackCreateNestedManyWithoutLibraryInput
@@ -3277,6 +3296,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     coverPath?: string | null
+    recentPlayedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     tracks?: TrackUncheckedCreateNestedManyWithoutLibraryInput
@@ -3287,6 +3307,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     coverPath?: NullableStringFieldUpdateOperationsInput | string | null
+    recentPlayedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tracks?: TrackUpdateManyWithoutLibraryNestedInput
@@ -3297,6 +3318,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     coverPath?: NullableStringFieldUpdateOperationsInput | string | null
+    recentPlayedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tracks?: TrackUncheckedUpdateManyWithoutLibraryNestedInput
@@ -3307,6 +3329,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     coverPath?: string | null
+    recentPlayedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -3316,6 +3339,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     coverPath?: NullableStringFieldUpdateOperationsInput | string | null
+    recentPlayedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -3325,6 +3349,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     coverPath?: NullableStringFieldUpdateOperationsInput | string | null
+    recentPlayedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -3475,6 +3500,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -3506,6 +3542,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     coverPath?: SortOrder
+    recentPlayedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3515,6 +3552,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     coverPath?: SortOrder
+    recentPlayedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3524,6 +3562,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     coverPath?: SortOrder
+    recentPlayedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -3560,6 +3599,20 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -3733,6 +3786,10 @@ export namespace Prisma {
     set?: string | null
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -3827,6 +3884,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -3892,6 +3960,20 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -4057,6 +4139,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     coverPath?: string | null
+    recentPlayedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -4066,6 +4149,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     coverPath?: string | null
+    recentPlayedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -4091,6 +4175,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     coverPath?: NullableStringFieldUpdateOperationsInput | string | null
+    recentPlayedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -4100,6 +4185,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     coverPath?: NullableStringFieldUpdateOperationsInput | string | null
+    recentPlayedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
