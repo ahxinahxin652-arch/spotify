@@ -32,7 +32,7 @@ function enterWarehouse(warehouse) {
 }
 
 async function handleDeleteWarehouse(warehouse) {
-  if (confirm(`确定要删除音乐库 "${warehouse.name}" 吗？文件不会被删除。`)) {
+  if (confirm(`确定要删除音乐库 "${warehouse.name}" 吗？对应文件会被删除。`)) {
     await library.deleteWarehouse(warehouse.name)
   }
 }
