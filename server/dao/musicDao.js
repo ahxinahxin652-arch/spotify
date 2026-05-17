@@ -1,6 +1,6 @@
+const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
-const { v4: uuidv4 } = require('uuid')
 const { getDb } = require('./db')
 const Track = require('../pojo/do/Track')
 const { WarehouseItemVO, ImportResultVO } = require('../pojo/vo/ResponseVOs')
@@ -83,7 +83,7 @@ async function createWarehouse(name) {
     // 1. 先插入数据库
     const library = await db.musicLibrary.create({
       data: {
-        id: uuidv4(),
+        id: crypto.randomUUID(),
         name,
       },
     })
@@ -291,7 +291,7 @@ async function importFilesToWarehouse(warehouseName, filePaths) {
       // 2. 文件复制成功后，插入数据库
       try {
         const stats = fs.statSync(finalPath)
-        const trackId = uuidv4()
+        const trackId = crypto.randomUUID()
 
         await db.track.create({
           data: {
@@ -382,7 +382,7 @@ async function syncWarehouse(warehouseName) {
       const ext = path.extname(file.name).toLowerCase()
       await db.track.create({
         data: {
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           libraryId: library.id,
           name: file.name,
           title: path.basename(file.name, ext),
