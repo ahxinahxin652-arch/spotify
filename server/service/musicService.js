@@ -96,7 +96,7 @@ async function getWarehouseTracks(warehouseName) {
   if (!result.success) {
     return ApiResult.fail(result.error)
   }
-  return ApiResult.ok({ warehouseName: result.warehouseName, tracks: result.tracks })
+  return ApiResult.ok({ warehouseName: result.warehouseName, tracks: result.tracks, warehouse: result.warehouse })
 }
 
 /**

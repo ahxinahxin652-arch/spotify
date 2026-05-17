@@ -42,7 +42,7 @@ function updateRecentPlayed(warehouseName) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/recent-played`, { method: 'POST', body: {} })
 }
 
-/** @returns {Promise<{ success: boolean, data?: { warehouseName: string, tracks: Array }, error?: string }>} */
+/** @returns {Promise<{ success: boolean, data?: { warehouseName: string, tracks: Array, warehouse: { name: string, description: string, coverPath: string } }, error?: string }>} */
 function getWarehouseTracks(warehouseName) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/tracks`)
 }

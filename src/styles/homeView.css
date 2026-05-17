@@ -130,7 +130,7 @@
 /* ========== 音乐库区域：固定最大高度，超出内滚动 ========== */
 .section-warehouse {
     flex-shrink: 0;
-    max-height: 50vh;
+    max-height: 55vh;
     overflow-x: hidden;
     overflow-y: auto;
     display: flex;
@@ -165,14 +165,14 @@
 /* ========== 音乐库卡片 ========== */
 .warehouse-grid {
     display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    /* 3~5 列，占满整行，宽度随窗口变大：
-       - min = max((100%-48px)/5, 140px)
-         窄屏取140px：3列(444px)放得下，4列(596px)放不下 → 正好3列
-         宽屏取(100%-48px)/5：5列放得下，6列放不下 → 正好5列
-       - 1fr 拉伸填满整行
-       - auto-fit 折叠空列，空间分给已有列 */
-    grid-template-columns: repeat(auto-fit, minmax(max(calc((100% - 48px) / 5), 155px), 1fr));
+}
+
+@media (max-width: 640px) {
+    .warehouse-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .warehouse-card {
@@ -220,14 +220,16 @@
 
 .warehouse-info {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     min-height: 0;
     flex-shrink: 0;
 }
 
 .warehouse-name {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-h);
     overflow: hidden;
@@ -236,7 +238,7 @@
 }
 
 .warehouse-count {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text);
     opacity: 0.7;
     overflow: hidden;

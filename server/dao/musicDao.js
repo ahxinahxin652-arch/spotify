@@ -264,7 +264,7 @@ async function getWarehouseTracks(warehouseName) {
       })
     }
 
-    return { success: true, warehouseName, tracks: validTracks }
+    return { success: true, warehouseName, tracks: validTracks, warehouse: { name: library.name, description: library.description || '', coverPath: library.coverPath || '' } }
   } catch (err) {
     return { success: false, error: err.message }
   }
