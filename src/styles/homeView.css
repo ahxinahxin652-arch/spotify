@@ -170,11 +170,10 @@
 }
 
 .warehouse-card {
-    aspect-ratio: 1 / 1;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 16px;
+    padding: 12px;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
     position: relative;
@@ -182,6 +181,9 @@
     contain: layout style;
     min-height: 0;
     overflow: hidden;
+    /* 卡片内部布局：封面自适应，信息区按需撑开 */
+    display: flex;
+    flex-direction: column;
 }
 
 .warehouse-card:hover {
@@ -198,11 +200,8 @@
     align-items: center;
     justify-content: center;
     color: var(--accent);
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     overflow: hidden;
-    /* 防止子元素撑开导致尺寸跳动 */
-    min-height: 0;
-    /* 确保网格重算时容器不会因内容不同而高度不一致 */
     flex-shrink: 0;
 }
 
@@ -216,19 +215,27 @@
 .warehouse-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    min-height: 0;
+    flex-shrink: 0;
 }
 
 .warehouse-name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-h);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .warehouse-count {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text);
     opacity: 0.7;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .btn-edit {
