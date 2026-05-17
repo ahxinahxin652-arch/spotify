@@ -169,7 +169,6 @@ body {
 .right-sidebar-wrapper {
     height: 100%;
     width: var(--sidebar-width);
-    min-width: 200px;
     max-width: 360px;
     flex-shrink: 0;
     z-index: 100;
@@ -178,10 +177,9 @@ body {
 }
 
 /*
- * 动画方案：width + opacity 分工
- *   - width：驱动 flex 重新分配主区域空间（layout 层，0.28s）
- *   - opacity：内容淡入/淡出（composite 层，GPU 合成）
- *   两者分别作用在不同元素上，零冲突，零卡顿
+ * 动画方案：width 驱动 flex 重新分配主区域空间
+ *   使用固定 duration 保证宽度平滑过渡，避免主内容区域宽度骤变
+ *   导致 auto-fill 网格列重新计算时出现抽搐
  */
 .sidebar-slide-enter-active,
 .sidebar-slide-leave-active {

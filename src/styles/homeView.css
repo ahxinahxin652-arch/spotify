@@ -170,13 +170,18 @@
 }
 
 .warehouse-card {
+    aspect-ratio: 1 / 1;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 16px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color 0.2s, background 0.2s;
     position: relative;
+    /* 隔离卡片的布局、绘制和尺寸，防止网格重算时内部元素抖动 */
+    contain: layout style;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .warehouse-card:hover {
@@ -186,7 +191,7 @@
 
 .warehouse-cover {
     width: 100%;
-    height: 100px;
+    aspect-ratio: 1;
     background: var(--accent-dim);
     border-radius: 8px;
     display: flex;
@@ -195,6 +200,10 @@
     color: var(--accent);
     margin-bottom: 12px;
     overflow: hidden;
+    /* 防止子元素撑开导致尺寸跳动 */
+    min-height: 0;
+    /* 确保网格重算时容器不会因内容不同而高度不一致 */
+    flex-shrink: 0;
 }
 
 .cover-img {
