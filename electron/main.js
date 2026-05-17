@@ -370,7 +370,7 @@ function setupWindowControls() {
 }
 
 // ========== 启动 ==========
-const { initDatabase, autoMigrate, disconnectDatabase } = require('../server/dao/db')
+const { initDatabase, autoMigrate, autoRecoverFromFiles, disconnectDatabase } = require('../server/dao/db')
 
 app.whenReady().then(async () => {
   // 1. 初始化数据库
@@ -378,6 +378,9 @@ app.whenReady().then(async () => {
 
   // 2. 自动执行建表迁移（确保运行时数据库表结构存在）
   await autoMigrate()
+
+  // 3. 自动恢复：数据库为空时从已有文件夹重建
+  await autoRecoverFromFiles()
 
   // 3. 启动 Express 服务器
   startExpressServer()

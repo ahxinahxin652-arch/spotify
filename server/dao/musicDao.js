@@ -18,11 +18,34 @@ const ENCRYPTED_FORMATS = ['kgm', 'kgma', 'vpr', 'kgmm', 'qmc0', 'qmc3', 'qmcfla
 // ========== 音乐仓库 DAO ==========
 
 /**
+ * 获取应用数据根目录
+ * - 安装后 (isPackaged): {userData}/data  (如 C:\Users\xxx\AppData\Roaming\Spotify\data)
+ * - dev 模式: ~/musicWarehouse  (如 C:\Users\xxx\musicWarehouse)
+ * 与 db.js 中的 getAppDataRoot 保持一致
+ * @returns {string}
+ */
+function getAppDataRoot() {
+  const { app } = require('electron')
+  if (app.isPackaged) {
+    return path.join(app.getPath('userData'), 'data')
+  }
+  return path.join(app.getPath('home'), 'musicWarehouse')
+}
+
+/**
  * 获取音乐仓库根目录
+ * - dev 模式: ~/musicWarehouse (getAppDataRoot 本身就返回这个)
+ * - 安装后: {userData}/data/musicWarehouse
  * @returns {string}
  */
 function getMusicWarehouseRoot() {
-  return path.join(require('electron').app.getPath('home'), 'musicWarehouse')
+  const { app } = require('electron')
+  if (app.isPackaged) {
+    // 安装后：在 data 目录下再加 musicWarehouse 子目录
+    return path.join(getAppDataRoot(), 'musicWarehouse')
+  }
+  // dev 模式：getAppDataRoot 已经是 ~/musicWarehouse，直接用
+  return getAppDataRoot()
 }
 
 /**
