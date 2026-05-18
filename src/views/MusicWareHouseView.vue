@@ -483,8 +483,8 @@ async function handleSaveEdit() {
                 </svg>
               </div>
               <div class="track-text">
-                <span class="track-name">{{ track.title || track.name }}</span>
-                <span class="track-artist">{{ track.artist || '未知作者' }}</span>
+                <span class="track-name" :title="track.title || track.name">{{ track.title || track.name }}</span>
+                <span class="track-artist" :title="track.artist || '未知作者'">{{ track.artist || '未知作者' }}</span>
               </div>
             </div>
             <div class="track-date">{{ formatDate(track.createdAt) }}</div>

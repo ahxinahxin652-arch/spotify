@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { usePlayerStore, RepeatMode } from '../stores/player.js'
 import { useSidebarStore } from '../stores/sidebar.js'
 import { Howl } from 'howler'
@@ -10,6 +10,31 @@ let howl = null
 
 const player = usePlayerStore()
 const sidebarStore = useSidebarStore()
+
+// ========== 滚动溢出检测 ==========
+const nameWrapRef = ref(null)
+const artistWrapRef = ref(null)
+const canScrollName = ref(false)
+const canScrollArtist = ref(false)
+
+function checkOverflow() {
+  nextTick(() => {
+    if (nameWrapRef.value) {
+      canScrollName.value = nameWrapRef.value.scrollWidth > nameWrapRef.value.clientWidth
+    }
+    if (artistWrapRef.value) {
+      canScrollArtist.value = artistWrapRef.value.scrollWidth > artistWrapRef.value.clientWidth
+    }
+  })
+}
+
+watch(() => player.currentTrack, () => {
+  checkOverflow()
+})
+
+onMounted(() => {
+  checkOverflow()
+})
 
 // ========== emit ==========
 const emit = defineEmits(['toggle-right-sidebar'])
@@ -252,10 +277,18 @@ onUnmounted(() => {
           </svg>
         </div>
         <div class="track-detail">
-          <div class="track-name-wrap">
-            <span class="track-name" :class="{ scrolling: player.isPlaying }">{{ player.currentTrack.title || player.currentTrack.name }}</span>
+          <div class="track-name-wrap" ref="nameWrapRef" :title="player.currentTrack.title || player.currentTrack.name">
+            <div class="track-name-inner" :class="{ scrolling: canScrollName }">
+              <span class="track-name">{{ player.currentTrack.title || player.currentTrack.name }}</span>
+              <span class="track-name-clone">{{ player.currentTrack.title || player.currentTrack.name }}</span>
+            </div>
           </div>
-          <span class="track-artist">{{ player.currentTrack.artist || '未知作者' }}</span>
+          <div class="track-artist-wrap" ref="artistWrapRef" :title="player.currentTrack.artist || '未知作者'">
+            <div class="track-artist-inner" :class="{ scrolling: canScrollArtist }">
+              <span class="track-artist">{{ player.currentTrack.artist || '未知作者' }}</span>
+              <span class="track-artist-clone">{{ player.currentTrack.artist || '未知作者' }}</span>
+            </div>
+          </div>
         </div>
       </div>
       <div v-else class="track-info">

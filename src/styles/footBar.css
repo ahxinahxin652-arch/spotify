@@ -24,6 +24,7 @@
     align-items: center;
     gap: 12px;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .track-cover {
@@ -56,42 +57,85 @@
     position: relative;
 }
 
-.track-name {
+.track-name-inner {
+    display: flex;
+    width: max-content;
+}
+
+.track-name,
+.track-name-clone {
     font-size: 13px;
     color: var(--text-h);
     font-weight: 500;
-    display: inline-block;
     white-space: nowrap;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    vertical-align: top;
+    padding-right: 40px;
 }
 
-.track-name.scrolling {
-    max-width: none;
-    text-overflow: clip;
-    animation: marquee 8s linear infinite;
+.track-name-clone {
+    display: none;
+}
+
+.track-name-inner.scrolling .track-name-clone {
+    display: inline;
+}
+
+.track-name-inner.scrolling {
+    animation: marquee 18s linear infinite;
+}
+
+.track-name-inner.scrolling:hover {
+    animation-play-state: paused;
+}
+
+.track-name-inner:hover .track-name,
+.track-name-inner:hover .track-name-clone {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* ---- 作者信息滚动 ---- */
+.track-artist-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+
+.track-artist-inner {
+    display: flex;
+    width: max-content;
+}
+
+.track-artist,
+.track-artist-clone {
+    font-size: 10px;
+    color: var(--text);
+    opacity: 0.6;
+    white-space: nowrap;
+    padding-right: 40px;
+}
+
+.track-artist-clone {
+    display: none;
+}
+
+.track-artist-inner.scrolling .track-artist-clone {
+    display: inline;
+}
+
+.track-artist-inner.scrolling {
+    animation: marquee 18s linear infinite;
+}
+
+.track-artist-inner.scrolling:hover {
+    animation-play-state: paused;
 }
 
 @keyframes marquee {
     0% {
         transform: translateX(0);
     }
-    10% {
-        transform: translateX(0);
-    }
-    45% {
-        transform: translateX(calc(-100% + 180px));
-    }
-    55% {
-        transform: translateX(calc(-100% + 180px));
-    }
-    90% {
-        transform: translateX(0);
-    }
     100% {
-        transform: translateX(0);
+        transform: translateX(-50%);
     }
 }
 
@@ -99,16 +143,6 @@
     color: var(--text);
     opacity: 0.5;
     font-size: 12px;
-}
-
-.track-artist {
-    font-size: 11px;
-    color: var(--text);
-    opacity: 0.6;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
 }
 
 /* 中间播放控制 */
