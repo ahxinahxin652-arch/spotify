@@ -18,6 +18,8 @@ const canScrollName = ref(false)
 const canScrollArtist = ref(false)
 
 function checkOverflow() {
+  canScrollName.value = false
+  canScrollArtist.value = false
   nextTick(() => {
     if (nameWrapRef.value) {
       canScrollName.value = nameWrapRef.value.scrollWidth > nameWrapRef.value.clientWidth
