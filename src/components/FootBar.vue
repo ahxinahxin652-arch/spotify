@@ -46,15 +46,36 @@ async function playTrack(track, playlist = [], index = -1) {
   stopCurrent()
   player.setTrack(track, playlist, index)
 
-  // 更新音乐库的最近播放时间
-  if (track.warehouse) {
-    window.electronAPI.updateRecentPlayed(track.warehouse).catch(() => {})
+  // 通过 track ID 从数据库解析最新的文件路径（防止改名后路径失效）
+  let currentTrack = track
+  if (track.id) {
+    try {
+      const resolved = await window.electronAPI.resolveTrackById(track.id)
+      if (resolved.success && resolved.data && resolved.data.track) {
+        currentTrack = resolved.data.track
+        // 同步更新 playlist 中对应的 track 对象
+        if (playlist.length > 0 && index >= 0 && index < playlist.length) {
+          playlist[index] = currentTrack
+        }
+        player.setTrack(currentTrack, playlist, index)
+      }
+    } catch (e) {
+      // 解析失败，回退使用内存中的 track 数据
+      console.warn('解析 track 最新路径失败，使用内存数据:', e)
+    }
+  }
+
+  // 更新音乐库的最近播放时间（优先使用稳定的 warehouseId，避免改名后失效）
+  if (currentTrack.warehouseId) {
+    window.electronAPI.updateRecentPlayedById(currentTrack.warehouseId).catch(() => {})
+  } else if (currentTrack.warehouse) {
+    window.electronAPI.updateRecentPlayed(currentTrack.warehouse).catch(() => {})
   }
 
   // 通过 Electron IPC 读取文件为 Blob，绕过 file:// 限制
   let audioBlob
   try {
-    audioBlob = await window.electronAPI.readFileAsBlob(track.path)
+    audioBlob = await window.electronAPI.readFileAsBlob(currentTrack.path)
   } catch (err) {
     console.error('读取音频文件失败:', err)
     player.setPlaying(false)
@@ -64,7 +85,7 @@ async function playTrack(track, playlist = [], index = -1) {
   currentBlobUrl = URL.createObjectURL(audioBlob)
 
   // 读取真实的后缀名
-  const fileExtension = track.path.split('.').pop().toLowerCase()
+  const fileExtension = currentTrack.path.split('.').pop().toLowerCase()
 
   howl = new Howl({
     src: [currentBlobUrl],

@@ -87,6 +87,19 @@ async function deleteMusicWarehouse(name) {
 }
 
 /**
+ * 通过 ID 删除音乐库
+ * @param {string} libraryId
+ * @returns {Promise<import('../pojo/vo/ApiResult')<null>>}
+ */
+async function deleteMusicWarehouseById(libraryId) {
+  const result = await musicDao.deleteWarehouseById(libraryId)
+  if (!result.success) {
+    return ApiResult.fail(result.error || '删除失败')
+  }
+  return ApiResult.ok(null, '删除成功')
+}
+
+/**
  * 获取指定音乐库的曲目列表
  * @param {string} warehouseName
  * @returns {Promise<import('../pojo/vo/ApiResult')<{ warehouseName: string, tracks: Array<import('../pojo/do/Track')> }>>}
@@ -96,7 +109,20 @@ async function getWarehouseTracks(warehouseName) {
   if (!result.success) {
     return ApiResult.fail(result.error)
   }
-  return ApiResult.ok({ warehouseName: result.warehouseName, tracks: result.tracks, warehouse: result.warehouse })
+  return ApiResult.ok({ warehouseName: result.warehouseName, tracks: result.tracks, libraryId: result.libraryId, warehouse: result.warehouse })
+}
+
+/**
+ * 通过 ID 获取指定音乐库的曲目列表
+ * @param {string} libraryId
+ * @returns {Promise<import('../pojo/vo/ApiResult')>}
+ */
+async function getWarehouseTracksById(libraryId) {
+  const result = await musicDao.getWarehouseTracksById(libraryId)
+  if (!result.success) {
+    return ApiResult.fail(result.error)
+  }
+  return ApiResult.ok({ warehouseName: result.warehouseName, tracks: result.tracks, libraryId: result.libraryId, warehouse: result.warehouse })
 }
 
 /**
@@ -107,6 +133,20 @@ async function getWarehouseTracks(warehouseName) {
  */
 async function importFilesToWarehouse(warehouseName, filePaths) {
   const result = await musicDao.importFilesToWarehouse(warehouseName, filePaths)
+  if (!result.success) {
+    return ApiResult.fail(result.error || '导入失败')
+  }
+  return ApiResult.ok({ imported: result.result.imported, skipped: result.result.skipped })
+}
+
+/**
+ * 通过 ID 导入文件到音乐库
+ * @param {string} libraryId
+ * @param {string[]} filePaths
+ * @returns {Promise<import('../pojo/vo/ApiResult')<{ imported: number, skipped: number }>>}
+ */
+async function importFilesToWarehouseById(libraryId, filePaths) {
+  const result = await musicDao.importFilesToWarehouseById(libraryId, filePaths)
   if (!result.success) {
     return ApiResult.fail(result.error || '导入失败')
   }
@@ -144,12 +184,35 @@ async function validateTrackPlayable(trackId, filePath) {
 }
 
 /**
+ * 通过 track ID 解析当前最新的 track 信息（含最新 path）
+ * @param {string} trackId
+ * @returns {Promise<import('../pojo/vo/ApiResult')>}
+ */
+async function resolveTrackById(trackId) {
+  const result = await musicDao.resolveTrackById(trackId)
+  if (!result.success) {
+    return ApiResult.fail(result.error)
+  }
+  return ApiResult.ok({ track: result.track })
+}
+
+/**
  * 同步指定音乐库的数据（文件系统 <-> 数据库一致性）
  * @param {string} warehouseName
  * @returns {Promise<import('../pojo/vo/ApiResult')<{ added: number, removed: number }>>}
  */
 async function syncWarehouse(warehouseName) {
   const result = await musicDao.syncWarehouse(warehouseName)
+  return ApiResult.ok(result)
+}
+
+/**
+ * 通过 ID 同步指定音乐库的数据
+ * @param {string} libraryId
+ * @returns {Promise<import('../pojo/vo/ApiResult')<{ added: number, removed: number }>>}
+ */
+async function syncWarehouseById(libraryId) {
+  const result = await musicDao.syncWarehouseById(libraryId)
   return ApiResult.ok(result)
 }
 
@@ -163,15 +226,31 @@ async function updateRecentPlayed(warehouseName) {
   return ApiResult.ok(null)
 }
 
+/**
+ * 通过 ID 更新音乐库的最近播放时间（名称变更安全）
+ * @param {string} libraryId - 音乐库 UUID
+ * @returns {Promise<import('../pojo/vo/ApiResult')<null>>}
+ */
+async function updateRecentPlayedById(libraryId) {
+  await musicDao.updateRecentPlayedById(libraryId)
+  return ApiResult.ok(null)
+}
+
 module.exports = {
   getMusicWarehouses,
   createMusicWarehouse,
   updateMusicWarehouse,
   deleteMusicWarehouse,
+  deleteMusicWarehouseById,
   getWarehouseTracks,
+  getWarehouseTracksById,
   importFilesToWarehouse,
+  importFilesToWarehouseById,
   getMusicWarehouseDir,
   validateTrackPlayable,
+  resolveTrackById,
   syncWarehouse,
+  syncWarehouseById,
   updateRecentPlayed,
+  updateRecentPlayedById,
 }

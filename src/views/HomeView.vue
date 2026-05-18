@@ -217,15 +217,18 @@ function enterWarehouse(warehouse) {
 
 function handleDrop(e) {
   e.preventDefault()
+  const warehouseId = e.currentTarget.dataset.warehouseId
   const warehouseName = e.currentTarget.dataset.warehouse
-  if (!warehouseName) return
+  if (!warehouseName && !warehouseId) return
   const files = Array.from(e.dataTransfer.files)
-  handleImportFiles(warehouseName, files)
+  handleImportFiles(warehouseId || warehouseName, files, !!warehouseId)
 }
 
-async function handleImportFiles(warehouseName, files) {
+async function handleImportFiles(warehouseKey, files, isId = false) {
   const filePaths = files.map(f => f.path)
-  const result = await window.electronAPI.importFilesToWarehouse(warehouseName, filePaths)
+  const result = isId
+    ? await window.electronAPI.importFilesToWarehouseById(warehouseKey, filePaths)
+    : await window.electronAPI.importFilesToWarehouse(warehouseKey, filePaths)
   if (result.success) {
     library.loadWarehouses()
   }
@@ -281,6 +284,7 @@ async function handleImportFiles(warehouseName, files) {
             @dragover.prevent
             @dragenter.prevent
             :data-warehouse="wh.name"
+            :data-warehouse-id="wh.id"
           >
             <div class="warehouse-cover" :style="wh.coverPath ? { background: 'none' } : {}">
               <img

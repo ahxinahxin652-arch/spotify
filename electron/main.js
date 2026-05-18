@@ -214,6 +214,45 @@ function startExpressServer() {
     res.json(await musicService.updateRecentPlayed(decodeURIComponent(name)))
   })
 
+  // 通过 ID 更新最近播放时间（名称变更安全）
+  expressApp.post('/api/music/libraries/:id/recent-played', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.updateRecentPlayedById(decodeURIComponent(id)))
+  })
+
+  // 通过 track ID 解析当前最新的 track 信息（含最新 path，播放前调用）
+  expressApp.get('/api/music/tracks/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.resolveTrackById(decodeURIComponent(id)))
+  })
+
+  // ---- 以下是 ID-based 的仓库操作 ----
+
+  // 通过 library ID 获取曲目列表
+  expressApp.get('/api/music/libraries/:id/tracks', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.getWarehouseTracksById(decodeURIComponent(id)))
+  })
+
+  // 通过 library ID 导入文件
+  expressApp.post('/api/music/libraries/:id/import', async (req, res) => {
+    const { id } = req.params
+    const { filePaths } = req.body
+    res.json(await musicService.importFilesToWarehouseById(decodeURIComponent(id), filePaths))
+  })
+
+  // 通过 library ID 同步音乐库
+  expressApp.post('/api/music/libraries/:id/sync', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.syncWarehouseById(decodeURIComponent(id)))
+  })
+
+  // 通过 library ID 删除音乐库
+  expressApp.delete('/api/music/libraries/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.deleteMusicWarehouseById(decodeURIComponent(id)))
+  })
+
   // ---- 格式转换 API ----
   const convertDao = require('../server/dao/convertDao')
   const convertService = require('../server/service/convertService')

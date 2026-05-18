@@ -52,7 +52,14 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
 
   async function deleteWarehouse(name) {
     try {
-      const result = await window.electronAPI.deleteMusicWarehouse(name)
+      // 优先通过 ID 删除（稳定），找到对应的仓库记录获取 id
+      const warehouse = warehouses.value.find(w => w.name === name)
+      let result
+      if (warehouse && warehouse.id) {
+        result = await window.electronAPI.deleteMusicWarehouseById(warehouse.id)
+      } else {
+        result = await window.electronAPI.deleteMusicWarehouse(name)
+      }
       if (result.success) {
         warehouses.value = warehouses.value.filter(w => w.name !== name)
         return true

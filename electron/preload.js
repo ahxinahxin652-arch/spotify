@@ -42,9 +42,19 @@ function updateRecentPlayed(warehouseName) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/recent-played`, { method: 'POST', body: {} })
 }
 
+/** @returns {Promise<{ success: boolean }>} */
+function updateRecentPlayedById(libraryId) {
+  return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/recent-played`, { method: 'POST', body: {} })
+}
+
 /** @returns {Promise<{ success: boolean, data?: { warehouseName: string, tracks: Array, warehouse: { name: string, description: string, coverPath: string } }, error?: string }>} */
 function getWarehouseTracks(warehouseName) {
   return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/tracks`)
+}
+
+/** 通过 library ID 获取曲目列表 */
+function getWarehouseTracksById(libraryId) {
+  return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/tracks`)
 }
 
 /** @returns {Promise<{ success: boolean, data?: { imported: number, skipped: number }, error?: string }>} */
@@ -53,6 +63,29 @@ function importFilesToWarehouse(warehouseName, filePaths) {
     method: 'POST',
     body: { filePaths },
   })
+}
+
+/** 通过 library ID 导入文件 */
+function importFilesToWarehouseById(libraryId, filePaths) {
+  return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/import`, {
+    method: 'POST',
+    body: { filePaths },
+  })
+}
+
+/** 通过 library ID 同步音乐库 */
+function syncWarehouseById(libraryId) {
+  return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/sync`, { method: 'POST', body: {} })
+}
+
+/** 通过 library ID 删除音乐库 */
+function deleteMusicWarehouseById(libraryId) {
+  return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}`, { method: 'DELETE' })
+}
+
+/** 通过 track ID 解析当前最新的 track 信息（含最新 path） */
+function resolveTrackById(trackId) {
+  return apiFetch(`/api/music/tracks/${encodeURIComponent(trackId)}`)
 }
 
 /** @returns {Promise<string|null>} */
@@ -176,9 +209,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createMusicWarehouse,
   updateMusicWarehouse,
   deleteMusicWarehouse,
+  deleteMusicWarehouseById,
   updateRecentPlayed,
+  updateRecentPlayedById,
   getWarehouseTracks,
+  getWarehouseTracksById,
   importFilesToWarehouse,
+  importFilesToWarehouseById,
+  syncWarehouseById,
+  resolveTrackById,
   getMusicWarehouseDir,
   // 格式转换
   scanFiles,

@@ -98,6 +98,7 @@ async function getAllWarehouses(sortBy = 'recent-played') {
     }
 
     result.push(new WarehouseItemVO({
+      id: lib.id,
       name: lib.name,
       path: warehousePath,
       trackCount: lib._count.tracks,
@@ -146,6 +147,7 @@ async function createWarehouse(name) {
     return {
       success: true,
       warehouse: new WarehouseItemVO({
+        id: library.id,
         name,
         path: warehousePath,
         trackCount: 0,
@@ -247,6 +249,7 @@ async function getWarehouseTracks(warehouseName) {
           modified: track.modified || 0,
           isEncrypted: track.isEncrypted,
           warehouse: warehouseName,
+          warehouseId: library.id,
           createdAt: track.createdAt,
           updatedAt: track.updatedAt,
         }))
@@ -264,7 +267,7 @@ async function getWarehouseTracks(warehouseName) {
       })
     }
 
-    return { success: true, warehouseName, tracks: validTracks, warehouse: { name: library.name, description: library.description || '', coverPath: library.coverPath || '' } }
+    return { success: true, warehouseName, tracks: validTracks, libraryId: library.id, warehouse: { name: library.name, description: library.description || '', coverPath: library.coverPath || '' } }
   } catch (err) {
     return { success: false, error: err.message }
   }
@@ -495,7 +498,7 @@ async function updateWarehouse(oldName, updates) {
       return { success: false, error: `音乐库 "${oldName}" 不存在` }
     }
 
-    // 如果要改名，需要重命名文件夹
+    // 如果要改名，需要重命名文件夹并更新所有 track 的路径
     const needRename = updates.name && updates.name !== oldName
     if (needRename) {
       const oldPath = path.join(root, oldName)
@@ -506,6 +509,23 @@ async function updateWarehouse(oldName, updates) {
       }
       // 重命名文件夹
       fs.renameSync(oldPath, newPath)
+
+      // 更新所有关联 track 的 path 字段，将旧路径前缀替换为新路径前缀
+      const oldPrefix = oldPath + path.sep
+      const newPrefix = newPath + path.sep
+      const libraryTracks = await db.track.findMany({
+        where: { libraryId: library.id },
+        select: { id: true, path: true },
+      })
+      for (const track of libraryTracks) {
+        if (track.path.startsWith(oldPrefix)) {
+          const updatedPath = newPrefix + track.path.slice(oldPrefix.length)
+          await db.track.update({
+            where: { id: track.id },
+            data: { path: updatedPath },
+          })
+        }
+      }
     }
 
     // 构建更新数据
@@ -524,6 +544,7 @@ async function updateWarehouse(oldName, updates) {
     return {
       success: true,
       warehouse: new WarehouseItemVO({
+        id: updated.id,
         name: updated.name,
         path: warehousePath,
         trackCount: updated._count.tracks,
@@ -559,15 +580,334 @@ async function updateRecentPlayed(warehouseName) {
   }
 }
 
+/**
+ * 通过 ID 更新音乐库的最近播放时间（名称变更安全）
+ * @param {string} libraryId - 音乐库 UUID
+ * @returns {Promise<{ success: boolean }>}
+ */
+async function updateRecentPlayedById(libraryId) {
+  const db = getDb()
+  try {
+    await db.musicLibrary.update({
+      where: { id: libraryId },
+      data: { recentPlayedAt: new Date() },
+    })
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 通过 track ID 解析当前最新的 track 信息（含最新 path）
+ * 播放端在播放前调用，确保拿到的是数据库中最新的路径
+ * @param {string} trackId
+ * @returns {Promise<{ success: boolean, track?: Object, error?: string }>}
+ */
+async function resolveTrackById(trackId) {
+  const db = getDb()
+  try {
+    const track = await db.track.findUnique({
+      where: { id: trackId },
+      include: { library: { select: { id: true, name: true } } },
+    })
+    if (!track) {
+      return { success: false, error: '曲目不存在' }
+    }
+    return {
+      success: true,
+      track: {
+        id: track.id,
+        libraryId: track.libraryId,
+        name: track.name,
+        title: track.title || track.name,
+        artist: track.artist || '',
+        album: track.album || '',
+        duration: track.duration || 0,
+        path: track.path,
+        format: track.format,
+        size: track.size,
+        modified: track.modified || 0,
+        isEncrypted: track.isEncrypted,
+        warehouse: track.library.name,
+        warehouseId: track.libraryId,
+        createdAt: track.createdAt,
+        updatedAt: track.updatedAt,
+      },
+    }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 获取音乐库下的所有曲目（通过 library ID）
+ * @param {string} libraryId
+ * @returns {Promise<{ success: boolean, tracks?: Array, libraryId?: string, warehouseName?: string, error?: string }>}
+ */
+async function getWarehouseTracksById(libraryId) {
+  const db = getDb()
+
+  try {
+    const library = await db.musicLibrary.findUnique({
+      where: { id: libraryId },
+    })
+
+    if (!library) {
+      return { success: false, error: `音乐库不存在` }
+    }
+
+    const tracks = await db.track.findMany({
+      where: { libraryId: library.id },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const validTracks = []
+    const orphanIds = []
+
+    for (const track of tracks) {
+      if (fs.existsSync(track.path)) {
+        validTracks.push(Track.from({
+          id: track.id,
+          libraryId: track.libraryId,
+          name: track.name,
+          title: track.title || track.name,
+          artist: track.artist || '',
+          album: track.album || '',
+          duration: track.duration || 0,
+          path: track.path,
+          format: track.format,
+          size: track.size,
+          modified: track.modified || 0,
+          isEncrypted: track.isEncrypted,
+          warehouse: library.name,
+          warehouseId: library.id,
+          createdAt: track.createdAt,
+          updatedAt: track.updatedAt,
+        }))
+      } else {
+        console.warn(`[DB Sync] Track "${track.name}" file not found at "${track.path}", removing from database`)
+        orphanIds.push(track.id)
+      }
+    }
+
+    if (orphanIds.length > 0) {
+      await db.track.deleteMany({
+        where: { id: { in: orphanIds } },
+      })
+    }
+
+    return { success: true, warehouseName: library.name, tracks: validTracks, libraryId: library.id, warehouse: { name: library.name, description: library.description || '', coverPath: library.coverPath || '' } }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 导入文件到音乐库（通过 library ID）
+ * @param {string} libraryId
+ * @param {string[]} filePaths
+ * @returns {Promise<{ success: boolean, result?: ImportResultVO, error?: string }>}
+ */
+async function importFilesToWarehouseById(libraryId, filePaths) {
+  const db = getDb()
+  const root = getMusicWarehouseRoot()
+
+  const library = await db.musicLibrary.findUnique({
+    where: { id: libraryId },
+  })
+
+  if (!library) {
+    return { success: false, error: `音乐库不存在` }
+  }
+
+  const musicDir = path.join(root, library.name, 'music')
+
+  if (!fs.existsSync(musicDir)) {
+    fs.mkdirSync(musicDir, { recursive: true })
+  }
+
+  const imported = []
+  const skipped = []
+
+  for (const filePath of filePaths) {
+    try {
+      const ext = path.extname(filePath).toLowerCase()
+      if (!ALL_IMPORTABLE_EXTENSIONS.includes(ext)) {
+        skipped.push(filePath)
+        continue
+      }
+
+      if (!fs.existsSync(filePath)) {
+        skipped.push(filePath)
+        continue
+      }
+
+      const fileName = path.basename(filePath)
+      const destPath = path.join(musicDir, fileName)
+
+      let finalPath = destPath
+      let finalName = fileName
+      let counter = 1
+      while (fs.existsSync(finalPath)) {
+        const nameWithoutExt = path.basename(filePath, ext)
+        finalName = `${nameWithoutExt}_${counter}${ext}`
+        finalPath = path.join(musicDir, finalName)
+        counter++
+      }
+
+      fs.copyFileSync(filePath, finalPath)
+
+      try {
+        const stats = fs.statSync(finalPath)
+        const trackId = crypto.randomUUID()
+
+        await db.track.create({
+          data: {
+            id: trackId,
+            libraryId: library.id,
+            name: finalName,
+            title: path.basename(finalName, ext),
+            path: finalPath,
+            format: ext.replace('.', ''),
+            size: stats.size,
+            modified: stats.mtimeMs,
+            isEncrypted: ENCRYPTED_FORMATS.includes(ext.replace('.', '')),
+          },
+        })
+
+        imported.push(finalPath)
+      } catch (dbErr) {
+        console.error(`[DB] Failed to insert track "${finalName}" into database, cleaning up file`)
+        try { fs.unlinkSync(finalPath) } catch (_) {}
+        skipped.push(filePath)
+      }
+    } catch (e) {
+      skipped.push(filePath)
+    }
+  }
+
+  return {
+    success: true,
+    result: new ImportResultVO({ imported: imported.length, skipped: skipped.length }),
+  }
+}
+
+/**
+ * 同步指定音乐库的数据（通过 library ID）
+ * @param {string} libraryId
+ * @returns {Promise<{ added: number, removed: number }>}
+ */
+async function syncWarehouseById(libraryId) {
+  const db = getDb()
+  const root = getMusicWarehouseRoot()
+
+  const library = await db.musicLibrary.findUnique({
+    where: { id: libraryId },
+  })
+
+  if (!library) return { added: 0, removed: 0 }
+
+  const musicDir = path.join(root, library.name, 'music')
+
+  const dbTracks = await db.track.findMany({
+    where: { libraryId: library.id },
+  })
+  const dbPathSet = new Set(dbTracks.map(t => t.path))
+
+  const fsFiles = []
+  if (fs.existsSync(musicDir)) {
+    scanMusicDirForSync(musicDir, fsFiles)
+  }
+  const fsPathSet = new Set(fsFiles.map(f => f.path))
+
+  const orphanTracks = dbTracks.filter(t => !fsPathSet.has(t.path))
+  let removed = 0
+  if (orphanTracks.length > 0) {
+    const result = await db.track.deleteMany({
+      where: { id: { in: orphanTracks.map(t => t.id) } },
+    })
+    removed = result.count
+  }
+
+  const newFiles = fsFiles.filter(f => !dbPathSet.has(f.path))
+  let added = 0
+  for (const file of newFiles) {
+    try {
+      const ext = path.extname(file.name).toLowerCase()
+      await db.track.create({
+        data: {
+          id: crypto.randomUUID(),
+          libraryId: library.id,
+          name: file.name,
+          title: path.basename(file.name, ext),
+          path: file.path,
+          format: ext.replace('.', ''),
+          size: file.size,
+          modified: file.modified,
+          isEncrypted: ENCRYPTED_FORMATS.includes(ext.replace('.', '')),
+        },
+      })
+      added++
+    } catch (e) {
+      // 可能路径重复，跳过
+    }
+  }
+
+  return { added, removed }
+}
+
+/**
+ * 删除音乐库（通过 library ID）
+ * @param {string} libraryId
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+async function deleteWarehouseById(libraryId) {
+  const db = getDb()
+  const root = getMusicWarehouseRoot()
+
+  try {
+    const library = await db.musicLibrary.findUnique({
+      where: { id: libraryId },
+    })
+
+    if (!library) {
+      return { success: true }
+    }
+
+    const warehousePath = path.join(root, library.name)
+
+    if (fs.existsSync(warehousePath)) {
+      try {
+        fs.rmSync(warehousePath, { recursive: true, force: true })
+      } catch (fsErr) {
+        console.error(`[DB] Warning: Failed to delete warehouse directory "${library.name}":`, fsErr.message)
+      }
+    }
+
+    await db.musicLibrary.delete({ where: { id: library.id } })
+
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
 module.exports = {
   getMusicWarehouseRoot,
   getAllWarehouses,
   createWarehouse,
   deleteWarehouse,
+  deleteWarehouseById,
   getWarehouseTracks,
+  getWarehouseTracksById,
   importFilesToWarehouse,
+  importFilesToWarehouseById,
   getMusicWarehouseDir,
   syncWarehouse,
+  syncWarehouseById,
   updateWarehouse,
   updateRecentPlayed,
+  updateRecentPlayedById,
+  resolveTrackById,
 }

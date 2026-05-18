@@ -12,6 +12,7 @@ const library = useMusicLibraryStore()
 
 const warehouseName = computed(() => decodeURIComponent(route.params.name))
 const warehouseInfo = ref({ name: '', description: '', coverPath: '' })
+const libraryId = ref('')  // 音乐库的稳定 UUID，用于所有 ID-based 操作
 const tracks = ref([])
 const isLoading = ref(false)
 const searchQuery = ref('')
@@ -54,9 +55,18 @@ onMounted(async () => {
 async function loadTracks() {
   isLoading.value = true
   try {
-    const result = await window.electronAPI.getWarehouseTracks(warehouseName.value)
+    // 优先使用 libraryId 加载（改名后仍能正确定位），否则从路由参数用名称加载
+    let result
+    if (libraryId.value) {
+      result = await window.electronAPI.getWarehouseTracksById(libraryId.value)
+    } else {
+      result = await window.electronAPI.getWarehouseTracks(warehouseName.value)
+    }
     if (result.success && result.data) {
       tracks.value = result.data.tracks
+      if (result.data.libraryId) {
+        libraryId.value = result.data.libraryId
+      }
       if (result.data.warehouse) {
         warehouseInfo.value = result.data.warehouse
       }
@@ -143,7 +153,11 @@ async function handleFileDrop(e) {
   e.preventDefault()
   const files = Array.from(e.dataTransfer.files)
   const filePaths = files.map(f => f.path)
-  const result = await window.electronAPI.importFilesToWarehouse(warehouseName.value, filePaths)
+  // 优先使用 libraryId
+  const api = libraryId.value
+    ? window.electronAPI.importFilesToWarehouseById(libraryId.value, filePaths)
+    : window.electronAPI.importFilesToWarehouse(warehouseName.value, filePaths)
+  const result = await api
   if (result.success) {
     await loadTracks()
   }
@@ -152,7 +166,11 @@ async function handleFileDrop(e) {
 async function handleAddFiles() {
   const filePaths = await window.electronAPI.selectMusicFiles()
   if (filePaths && filePaths.length > 0) {
-    const result = await window.electronAPI.importFilesToWarehouse(warehouseName.value, filePaths)
+    // 优先使用 libraryId
+    const api = libraryId.value
+      ? window.electronAPI.importFilesToWarehouseById(libraryId.value, filePaths)
+      : window.electronAPI.importFilesToWarehouse(warehouseName.value, filePaths)
+    const result = await api
     if (result.success) {
       await loadTracks()
     }

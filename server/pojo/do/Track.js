@@ -17,13 +17,14 @@ class Track {
    * @param {number} [params.modified]   - 文件修改时间戳 (mtimeMs)
    * @param {boolean} [params.isEncrypted] - 是否为加密格式
    * @param {string} [params.warehouse]  - 所属仓库名称
+   * @param {string} [params.warehouseId] - 所属仓库 ID (稳定 UUID)
    * @param {Date|string} [params.createdAt] - 录入时间
    * @param {Date|string} [params.updatedAt] - 更新时间
    */
   constructor({
     id, libraryId = '', name, title = '', artist = '', album = '',
     duration = 0, path, format = '', size = 0, modified = 0,
-    isEncrypted = false, warehouse = '', createdAt, updatedAt,
+    isEncrypted = false, warehouse = '', warehouseId = '', createdAt, updatedAt,
   }) {
     this.id = id
     this.libraryId = libraryId
@@ -38,6 +39,7 @@ class Track {
     this.modified = modified
     this.isEncrypted = isEncrypted
     this.warehouse = warehouse
+    this.warehouseId = warehouseId
     this.createdAt = createdAt || new Date().toISOString()
     this.updatedAt = updatedAt || new Date().toISOString()
   }
