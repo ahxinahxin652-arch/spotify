@@ -67,7 +67,7 @@ function onSidebarAfterLeave() {
     <header class="titlebar" @dblclick="handleMaximize">
       <!-- Logo -->
       <div>
-        Spotify
+        Satisfy
       </div>
 
       <!-- 主导航 -->

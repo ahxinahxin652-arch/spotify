@@ -53,11 +53,11 @@ function createTray() {
   icon.setTemplateImage(true)
 
   tray = new Tray(icon)
-  tray.setToolTip('Spotify')
+  tray.setToolTip('Satisfy')
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '打开 Spotify',
+      label: 'open Satisfy',
       click: () => {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.show()
@@ -69,7 +69,7 @@ function createTray() {
     },
     { type: 'separator' },
     {
-      label: '完全退出',
+      label: 'exit',
       click: () => {
         isQuitting = true
         app.quit()
