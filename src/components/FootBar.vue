@@ -22,10 +22,25 @@ function checkOverflow() {
   canScrollArtist.value = false
   nextTick(() => {
     if (nameWrapRef.value) {
-      canScrollName.value = nameWrapRef.value.scrollWidth > nameWrapRef.value.clientWidth
+      const nameEl = nameWrapRef.value.querySelector('.track-name')
+      canScrollName.value = nameEl ? nameEl.offsetWidth > nameWrapRef.value.clientWidth : false
     }
     if (artistWrapRef.value) {
-      canScrollArtist.value = artistWrapRef.value.scrollWidth > artistWrapRef.value.clientWidth
+      const artistEl = artistWrapRef.value.querySelector('.track-artist')
+      canScrollArtist.value = artistEl ? artistEl.offsetWidth > artistWrapRef.value.clientWidth : false
+    }
+  })
+}
+
+function refreshOverflow() {
+  nextTick(() => {
+    if (nameWrapRef.value) {
+      const nameEl = nameWrapRef.value.querySelector('.track-name')
+      canScrollName.value = nameEl ? nameEl.offsetWidth > nameWrapRef.value.clientWidth : false
+    }
+    if (artistWrapRef.value) {
+      const artistEl = artistWrapRef.value.querySelector('.track-artist')
+      canScrollArtist.value = artistEl ? artistEl.offsetWidth > artistWrapRef.value.clientWidth : false
     }
   })
 }
@@ -36,6 +51,7 @@ watch(() => player.currentTrack, () => {
 
 onMounted(() => {
   checkOverflow()
+  window.addEventListener('resize', refreshOverflow)
 })
 
 // ========== emit ==========
@@ -57,6 +73,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('play-track', handlePlayTrackEvent)
+  window.removeEventListener('resize', refreshOverflow)
   stopCurrent()
 })
 
