@@ -252,8 +252,10 @@ onUnmounted(() => {
           </svg>
         </div>
         <div class="track-detail">
-          <span class="track-name">{{ player.currentTrack.name }}</span>
-          <span class="track-warehouse">{{ player.currentTrack.warehouse }}</span>
+          <div class="track-name-wrap">
+            <span class="track-name" :class="{ scrolling: player.isPlaying }">{{ player.currentTrack.title || player.currentTrack.name }}</span>
+          </div>
+          <span class="track-artist">{{ player.currentTrack.artist || '未知作者' }}</span>
         </div>
       </div>
       <div v-else class="track-info">

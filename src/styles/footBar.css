@@ -47,15 +47,52 @@
     flex-direction: column;
     gap: 2px;
     overflow: hidden;
+    min-width: 0;
+}
+
+.track-name-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
 }
 
 .track-name {
     font-size: 13px;
     color: var(--text-h);
     font-weight: 500;
+    display: inline-block;
+    white-space: nowrap;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    vertical-align: top;
+}
+
+.track-name.scrolling {
+    max-width: none;
+    text-overflow: clip;
+    animation: marquee 8s linear infinite;
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+    10% {
+        transform: translateX(0);
+    }
+    45% {
+        transform: translateX(calc(-100% + 180px));
+    }
+    55% {
+        transform: translateX(calc(-100% + 180px));
+    }
+    90% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(0);
+    }
 }
 
 .track-name.empty-text {
@@ -64,10 +101,14 @@
     font-size: 12px;
 }
 
-.track-warehouse {
+.track-artist {
     font-size: 11px;
     color: var(--text);
     opacity: 0.6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 /* 中间播放控制 */

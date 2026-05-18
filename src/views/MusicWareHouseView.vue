@@ -115,6 +115,14 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+}
+
 function playTrack(track, index) {
   player.setPlaylist(filteredTracks.value, index)
   window.dispatchEvent(new CustomEvent('play-track', {
@@ -448,14 +456,9 @@ async function handleSaveEdit() {
         <!-- 曲目表头 -->
         <div class="track-header">
           <span class="th-num">#</span>
-          <span class="th-title">标题</span>
-          <span class="th-size">大小</span>
-          <span class="th-duration">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-          </span>
+          <span class="th-info">歌曲</span>
+          <span class="th-date">添加时间</span>
+          <span class="th-duration">时长</span>
         </div>
         <ul class="track-list">
           <li
@@ -471,10 +474,20 @@ async function handleSaveEdit() {
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
             </div>
-            <div class="track-info">
-              <span class="track-name">{{ track.name }}</span>
-              <span class="track-meta">{{ formatSize(track.size) }}</span>
+            <div class="track-info-col">
+              <div class="track-cover-sm">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 18V5l12-2v13"/>
+                  <circle cx="6" cy="18" r="3"/>
+                  <circle cx="18" cy="16" r="3"/>
+                </svg>
+              </div>
+              <div class="track-text">
+                <span class="track-name">{{ track.title || track.name }}</span>
+                <span class="track-artist">{{ track.artist || '未知作者' }}</span>
+              </div>
             </div>
+            <div class="track-date">{{ formatDate(track.createdAt) }}</div>
             <div class="track-duration">{{ track.duration ? formatTime(track.duration) : '' }}</div>
           </li>
         </ul>
