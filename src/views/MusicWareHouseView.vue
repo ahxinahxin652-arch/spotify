@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { usePlayerStore } from '../stores/player.js'
@@ -17,6 +17,22 @@ const isLoading = ref(false)
 const searchQuery = ref('')
 const sortBy = ref('name') // 'name' | 'size' | 'modified'
 const showSearch = ref(false)
+const searchInputRef = ref(null)
+
+function toggleSearch() {
+  if (showSearch.value) {
+    showSearch.value = false
+    searchQuery.value = ''
+  } else {
+    showSearch.value = true
+    nextTick(() => searchInputRef.value?.focus())
+  }
+}
+
+function closeSearch() {
+  showSearch.value = false
+  searchQuery.value = ''
+}
 
 // ---- 编辑弹窗状态 ----
 const showEditDialog = ref(false)
@@ -98,21 +114,25 @@ function playTrack(track, index) {
 
 function playAll() {
   if (filteredTracks.value.length === 0) return
-  playTrack(filteredTracks.value[0], 0)
+  if (player.shuffle) {
+    // 随机模式：随机选一首开始
+    const list = [...filteredTracks.value]
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]]
+    }
+    player.setPlaylist(list, 0)
+    window.dispatchEvent(new CustomEvent('play-track', {
+      detail: { track: list[0], playlist: list, index: 0 }
+    }))
+  } else {
+    // 顺序模式：从第一首开始
+    playTrack(filteredTracks.value[0], 0)
+  }
 }
 
-function shuffleAll() {
-  if (filteredTracks.value.length === 0) return
-  const list = [...filteredTracks.value]
-  for (let i = list.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [list[i], list[j]] = [list[j], list[i]]
-  }
-  player.setPlaylist(list, 0)
-  if (!player.shuffle) player.toggleShuffle()
-  window.dispatchEvent(new CustomEvent('play-track', {
-    detail: { track: list[0], playlist: list, index: 0 }
-  }))
+function toggleShuffleMode() {
+  player.toggleShuffle()
 }
 
 function isCurrentTrack(track) {
@@ -274,33 +294,42 @@ async function handleSaveEdit() {
   <div class="warehouse-view">
     <!-- Spotify 风格 Hero 头部 -->
     <div class="warehouse-hero">
-      <div class="hero-cover" @click="openEditDialog" title="点击编辑封面">
-        <img
-          v-if="warehouseInfo.coverPath"
-          :src="warehouseInfo.coverPath"
-          class="hero-cover-img"
-          alt=""
-        />
-        <div v-else class="hero-cover-placeholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-            <path d="M9 18V5l12-2v13"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="16" r="3"/>
+      <div class="hero-top-bar">
+        <button class="btn btn-back" @click="router.push('/')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
           </svg>
-        </div>
+        </button>
       </div>
-      <div class="hero-info">
-        <h1 class="hero-title" @click="openEditDialog" title="点击编辑">{{ warehouseInfo.name || warehouseName }}</h1>
-        <p
-          class="hero-description"
-          :class="{ 'clickable-desc': !warehouseInfo.description }"
-          @click="openEditDialog"
-          :title="warehouseInfo.description ? '点击编辑' : '点击添加描述'"
-        >{{ warehouseInfo.description || '添加描述...' }}</p>
-        <div class="hero-meta">
-          <span class="meta-item">{{ tracks.length }} 首曲目</span>
-          <span v-if="totalDuration" class="meta-separator">&middot;</span>
-          <span v-if="totalDuration" class="meta-item">{{ totalDuration }}</span>
+      <div class="hero-content">
+        <div class="hero-cover" @click="openEditDialog" title="点击编辑封面">
+          <img
+            v-if="warehouseInfo.coverPath"
+            :src="warehouseInfo.coverPath"
+            class="hero-cover-img"
+            alt=""
+          />
+          <div v-else class="hero-cover-placeholder">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
+        </div>
+        <div class="hero-info">
+          <h1 class="hero-title" @click="openEditDialog" title="点击编辑">{{ warehouseInfo.name || warehouseName }}</h1>
+          <p
+            v-if="warehouseInfo.description"
+            class="hero-description"
+            @click="openEditDialog"
+            title="点击编辑"
+          >{{ warehouseInfo.description }}</p>
+          <div class="hero-meta">
+            <span class="meta-item">{{ tracks.length }} 首曲目</span>
+            <span v-if="totalDuration" class="meta-separator">&middot;</span>
+            <span v-if="totalDuration" class="meta-item">{{ totalDuration }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -316,9 +345,9 @@ async function handleSaveEdit() {
         <button
           class="action-btn shuffle-btn"
           :class="{ active: player.shuffle }"
-          @click="shuffleAll"
+          @click="toggleShuffleMode"
           :disabled="filteredTracks.length === 0"
-          title="随机播放"
+          title="随机播放模式"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 3 21 3 21 8"/>
@@ -330,17 +359,37 @@ async function handleSaveEdit() {
         </button>
       </div>
       <div class="actions-right">
-        <button
-          class="action-btn"
-          :class="{ active: showSearch }"
-          @click="showSearch = !showSearch"
-          title="搜索"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
+        <div class="search-inline" :class="{ expanded: showSearch }">
+          <div v-if="showSearch" class="search-inline-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              ref="searchInputRef"
+              v-model="searchQuery"
+              placeholder="搜索曲目..."
+              @keydown.escape="closeSearch"
+            />
+            <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <button
+            class="action-btn"
+            :class="{ active: showSearch }"
+            @click="toggleSearch"
+            title="搜索"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </div>
         <select v-model="sortBy" class="sort-select">
           <option value="name">按名称</option>
           <option value="size">按大小</option>
@@ -353,33 +402,9 @@ async function handleSaveEdit() {
           </svg>
           添加曲目
         </button>
-        <button class="btn btn-back" @click="router.push('/')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          返回
-        </button>
+
       </div>
     </div>
-
-    <!-- 搜索栏（可折叠） -->
-    <Transition name="slide-down">
-      <div v-if="showSearch" class="search-bar">
-        <div class="search-box">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input v-model="searchQuery" placeholder="搜索曲目..." autofocus />
-          <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </Transition>
 
     <!-- 曲目列表 -->
     <div
