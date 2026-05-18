@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { usePlayerStore } from '../stores/player.js'
 import { useMusicLibraryStore } from '../stores/musicLibrary.js'
 
@@ -17,6 +18,19 @@ const searchQuery = ref('')
 const sortBy = ref('name') // 'name' | 'size' | 'modified'
 const showSearch = ref(false)
 
+// ---- 编辑弹窗状态 ----
+const showEditDialog = ref(false)
+const editName = ref('')
+const editDescription = ref('')
+const editCoverBase64 = ref('')
+const editLoading = ref(false)
+const editCoverHover = ref(false)
+const coverInputRef = ref(null)
+const ALLOWED_IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp']
+const MIN_IMG_SIZE = 600
+const MAX_IMG_SIZE = 3000
+const COMPRESS_SIZE = 1000
+
 onMounted(async () => {
   await loadTracks()
 })
@@ -29,7 +43,6 @@ async function loadTracks() {
       tracks.value = result.data.tracks
       if (result.data.warehouse) {
         warehouseInfo.value = result.data.warehouse
-        console.log('[Warehouse] coverPath:', warehouseInfo.value.coverPath?.substring(0, 50))
       }
     }
   } catch (err) {
@@ -91,7 +104,6 @@ function playAll() {
 function shuffleAll() {
   if (filteredTracks.value.length === 0) return
   const list = [...filteredTracks.value]
-  // Fisher-Yates shuffle
   for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [list[i], list[j]] = [list[j], list[i]]
@@ -105,23 +117,6 @@ function shuffleAll() {
 
 function isCurrentTrack(track) {
   return player.currentTrack && player.currentTrack.path === track.path
-}
-
-// 判断当前是否正在播放该仓库的音乐
-const isWarehousePlaying = computed(() => {
-  if (!player.isPlaying || !player.currentTrack) return false
-  return tracks.value.some(t => t.path === player.currentTrack.path)
-})
-
-function toggleWarehousePlay() {
-  if (isWarehousePlaying.value) {
-    // 暂停 - 通过 FootBar 处理
-    window.dispatchEvent(new CustomEvent('play-track', {
-      detail: { track: player.currentTrack, playlist: player.currentPlaylist, index: player.currentIndex }
-    }))
-    return
-  }
-  playAll()
 }
 
 async function handleFileDrop(e) {
@@ -143,13 +138,143 @@ async function handleAddFiles() {
     }
   }
 }
+
+// ========== 编辑弹窗 ==========
+function openEditDialog() {
+  editName.value = warehouseInfo.value.name || warehouseName.value
+  editDescription.value = warehouseInfo.value.description || ''
+  editCoverBase64.value = warehouseInfo.value.coverPath || ''
+  editCoverHover.value = false
+  showEditDialog.value = true
+}
+
+function triggerCoverInput() {
+  coverInputRef.value?.click()
+}
+
+async function handleCoverUpload(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  if (!ALLOWED_IMG_TYPES.includes(file.type)) {
+    ElMessage.error('不支持的图片格式，请选择 PNG/JPG/WEBP/GIF/BMP')
+    e.target.value = ''
+    return
+  }
+  try {
+    const base64 = await resizeImage(file, COMPRESS_SIZE)
+    editCoverBase64.value = base64
+  } catch (err) {
+    ElMessage.error(err.message || '图片处理失败')
+  }
+  e.target.value = ''
+}
+
+function removeCover() {
+  editCoverBase64.value = ''
+}
+
+function resizeImage(file, maxPx) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const img = new Image()
+      img.onload = () => {
+        const { width, height } = img
+        if (width < MIN_IMG_SIZE || height < MIN_IMG_SIZE) {
+          ElMessage.warning(`图片分辨率过小，最小 ${MIN_IMG_SIZE}px x ${MIN_IMG_SIZE}px`)
+          reject(new Error('图片分辨率过小'))
+          return
+        }
+        let targetW = width
+        let targetH = height
+        if (targetW > MAX_IMG_SIZE || targetH > MAX_IMG_SIZE) {
+          if (targetW > targetH) {
+            targetH = Math.round((targetH / targetW) * MAX_IMG_SIZE)
+            targetW = MAX_IMG_SIZE
+          } else {
+            targetW = Math.round((targetW / targetH) * MAX_IMG_SIZE)
+            targetH = MAX_IMG_SIZE
+          }
+        } else if (targetW > maxPx || targetH > maxPx) {
+          if (targetW > targetH) {
+            targetH = Math.round((targetH / targetW) * maxPx)
+            targetW = maxPx
+          } else {
+            targetW = Math.round((targetW / targetH) * maxPx)
+            targetH = maxPx
+          }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = targetW
+        canvas.height = targetH
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, targetW, targetH)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.onerror = () => reject(new Error('无法加载图片'))
+      img.src = ev.target.result
+    }
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function handleSaveEdit() {
+  const newName = editName.value.trim()
+  if (!newName) {
+    ElMessage.warning('音乐库名称不能为空')
+    return
+  }
+  if (newName.length > 30) {
+    ElMessage.warning('音乐库名称不能超过 30 个字符')
+    return
+  }
+  if (editDescription.value.length > 100) {
+    ElMessage.warning('描述不能超过 100 个字符')
+    return
+  }
+  editLoading.value = true
+
+  const currentName = warehouseInfo.value.name || warehouseName.value
+  const updates = {}
+  if (newName !== currentName) updates.name = newName
+  if ((editDescription.value.trim() || '') !== (warehouseInfo.value.description || '')) {
+    updates.description = editDescription.value.trim()
+  }
+  if (editCoverBase64.value !== (warehouseInfo.value.coverPath || '')) {
+    updates.coverPath = editCoverBase64.value
+  }
+
+  if (Object.keys(updates).length === 0) {
+    showEditDialog.value = false
+    editLoading.value = false
+    return
+  }
+
+  const result = await library.updateWarehouse(currentName, updates)
+  editLoading.value = false
+
+  if (result.success) {
+    showEditDialog.value = false
+    ElMessage.success('保存成功')
+    // 如果改名，需要跳转到新路由
+    if (updates.name) {
+      router.replace(`/warehouse/${encodeURIComponent(updates.name)}`)
+    }
+    // 重新加载数据
+    await loadTracks()
+    await library.loadWarehouses()
+  } else {
+    ElMessage.error(result.error || '保存失败')
+  }
+}
 </script>
 
 <template>
   <div class="warehouse-view">
     <!-- Spotify 风格 Hero 头部 -->
     <div class="warehouse-hero">
-      <div class="hero-cover">
+      <div class="hero-cover" @click="openEditDialog" title="点击编辑封面">
         <img
           v-if="warehouseInfo.coverPath"
           :src="warehouseInfo.coverPath"
@@ -165,9 +290,13 @@ async function handleAddFiles() {
         </div>
       </div>
       <div class="hero-info">
-        <span class="hero-type">音乐库</span>
-        <h1 class="hero-title">{{ warehouseInfo.name || warehouseName }}</h1>
-        <p v-if="warehouseInfo.description" class="hero-description">{{ warehouseInfo.description }}</p>
+        <h1 class="hero-title" @click="openEditDialog" title="点击编辑">{{ warehouseInfo.name || warehouseName }}</h1>
+        <p
+          class="hero-description"
+          :class="{ 'clickable-desc': !warehouseInfo.description }"
+          @click="openEditDialog"
+          :title="warehouseInfo.description ? '点击编辑' : '点击添加描述'"
+        >{{ warehouseInfo.description || '添加描述...' }}</p>
         <div class="hero-meta">
           <span class="meta-item">{{ tracks.length }} 首曲目</span>
           <span v-if="totalDuration" class="meta-separator">&middot;</span>
@@ -306,6 +435,66 @@ async function handleAddFiles() {
             <div class="track-duration">{{ track.duration ? formatTime(track.duration) : '' }}</div>
           </li>
         </ul>
+      </div>
+    </div>
+
+    <!-- 编辑音乐库对话框 -->
+    <div v-if="showEditDialog" class="dialog-overlay" @click.self="showEditDialog = false">
+      <div class="dialog edit-dialog" @click.stop>
+        <h3 class="dialog-title">编辑音乐库</h3>
+        <input
+          ref="coverInputRef"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+          @change="handleCoverUpload"
+          style="display: none"
+        />
+        <div class="edit-body">
+          <div
+            class="edit-cover-area"
+            @click="triggerCoverInput"
+            @mouseenter="editCoverHover = true"
+            @mouseleave="editCoverHover = false"
+          >
+            <img v-if="editCoverBase64" :src="editCoverBase64" class="edit-cover-img" alt="" />
+            <div v-else class="edit-cover-empty">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+              <span class="cover-add-text">选择图片</span>
+            </div>
+            <div v-if="editCoverBase64 && editCoverHover" class="edit-cover-overlay">
+              <button class="cover-remove-btn" @click.stop="removeCover" title="移除封面">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+              <span class="cover-change-text">更换图片</span>
+            </div>
+          </div>
+          <div class="edit-fields">
+            <input
+              v-model="editName"
+              class="dialog-input edit-input"
+              placeholder="音乐库名称"
+              maxlength="30"
+            />
+            <input
+              v-model="editDescription"
+              class="dialog-input edit-input"
+              placeholder="描述（可选）"
+              maxlength="100"
+            />
+          </div>
+        </div>
+        <div class="edit-footer">
+          <button class="btn btn-primary" @click="handleSaveEdit" :disabled="editLoading">
+            {{ editLoading ? '保存中...' : '保存' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
