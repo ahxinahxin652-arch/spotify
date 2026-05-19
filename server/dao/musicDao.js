@@ -1,6 +1,7 @@
 const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
+const { spawn } = require('child_process')
 const { getDb } = require('./db')
 const Track = require('../pojo/do/Track')
 const { WarehouseItemVO, ImportResultVO } = require('../pojo/vo/ResponseVOs')
@@ -14,6 +15,46 @@ const ALL_IMPORTABLE_EXTENSIONS = [
   '.ncm', '.kwm',
 ]
 const ENCRYPTED_FORMATS = ['kgm', 'kgma', 'vpr', 'kgmm', 'qmc0', 'qmc3', 'qmcflac', 'qmcogg', 'mflac', 'mgg', 'ncm', 'kwm']
+
+// ========== 元数据解析 ==========
+
+/**
+ * 解析音频文件的元数据 (歌曲名、歌手、时长)
+ * @param {string} filePath 音频文件的绝对路径
+ * @returns {Promise<{ title: string, artist: string, duration: number }>}
+ */
+async function parseAudioMetadata(filePath) {
+  try {
+    // 使用动态 import 兼容 CommonJS / ESM 环境
+    const mm = await import('music-metadata');
+
+    // parseFile 会自动分析文件头并提取相关信息
+    const metadata = await mm.parseFile(filePath);
+
+    return {
+      title: metadata.common.title || '',
+      artist: metadata.common.artist || '',
+      // 时长单位为秒，使用 Math.round 进行取整，如果解析失败默认为 0
+      duration: metadata.format.duration ? Math.round(metadata.format.duration) : 0
+    };
+  } catch (error) {
+    console.error(`[Metadata] 解析文件元数据失败 ${filePath}:`, error.message);
+    // 解析失败时返回空值，避免程序中断
+    return { title: '', artist: '', duration: 0 };
+  }
+}
+
+/**
+ * 辅助函数：当元数据缺失时，尝试从文件名中推断信息 (例如 "歌手 - 歌名")
+ */
+function parseFileName(fileName) {
+  const nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+  const parts = nameWithoutExt.split(' - ');
+  if (parts.length >= 2) {
+    return { artist: parts[0].trim(), title: parts[1].trim() };
+  }
+  return { artist: '', title: nameWithoutExt };
+}
 
 // ========== 音乐仓库 DAO ==========
 
@@ -337,20 +378,29 @@ async function importFilesToWarehouse(warehouseName, filePaths) {
       try {
         const stats = fs.statSync(finalPath)
         const trackId = crypto.randomUUID()
+        const isEncrypted = ENCRYPTED_FORMATS.includes(ext.replace('.', ''))
 
-        await db.track.create({
-          data: {
-            id: trackId,
-            libraryId: library.id,
-            name: finalName,
-            title: path.basename(finalName, ext),
-            path: finalPath,
-            format: ext.replace('.', ''),
-            size: stats.size,
-            modified: stats.mtimeMs,
-            isEncrypted: ENCRYPTED_FORMATS.includes(ext.replace('.', '')),
-          },
-        })
+        const trackData = {
+          id: trackId,
+          libraryId: library.id,
+          name: finalName,
+          title: path.basename(finalName, ext),
+          path: finalPath,
+          format: ext.replace('.', ''),
+          size: stats.size,
+          modified: stats.mtimeMs,
+          isEncrypted,
+        }
+
+        if (!isEncrypted && SUPPORTED_EXTENSIONS.includes(ext)) {
+          const meta = await parseAudioMetadata(finalPath)
+          const nameMeta = parseFileName(finalName)
+          trackData.title = meta.title || nameMeta.title || trackData.title
+          trackData.artist = meta.artist || nameMeta.artist || ''
+          trackData.duration = meta.duration || 0
+        }
+
+        await db.track.create({ data: trackData })
 
         imported.push(finalPath)
       } catch (dbErr) {
@@ -425,19 +475,29 @@ async function syncWarehouse(warehouseName) {
   for (const file of newFiles) {
     try {
       const ext = path.extname(file.name).toLowerCase()
-      await db.track.create({
-        data: {
-          id: crypto.randomUUID(),
-          libraryId: library.id,
-          name: file.name,
-          title: path.basename(file.name, ext),
-          path: file.path,
-          format: ext.replace('.', ''),
-          size: file.size,
-          modified: file.modified,
-          isEncrypted: ENCRYPTED_FORMATS.includes(ext.replace('.', '')),
-        },
-      })
+      const isEncrypted = ENCRYPTED_FORMATS.includes(ext.replace('.', ''))
+
+      const trackData = {
+        id: crypto.randomUUID(),
+        libraryId: library.id,
+        name: file.name,
+        title: path.basename(file.name, ext),
+        path: file.path,
+        format: ext.replace('.', ''),
+        size: file.size,
+        modified: file.modified,
+        isEncrypted,
+      }
+
+      if (!isEncrypted && SUPPORTED_EXTENSIONS.includes(ext)) {
+        const meta = await parseAudioMetadata(file.path)
+        const nameMeta = parseFileName(file.name)
+        trackData.title = meta.title || nameMeta.title || trackData.title
+        trackData.artist = meta.artist || nameMeta.artist || ''
+        trackData.duration = meta.duration || 0
+      }
+
+      await db.track.create({ data: trackData })
       added++
     } catch (e) {
       // 可能路径重复，跳过
@@ -710,87 +770,108 @@ async function getWarehouseTracksById(libraryId) {
  * @returns {Promise<{ success: boolean, result?: ImportResultVO, error?: string }>}
  */
 async function importFilesToWarehouseById(libraryId, filePaths) {
-  const db = getDb()
-  const root = getMusicWarehouseRoot()
+  const db = getDb();
+  const root = getMusicWarehouseRoot();
 
   const library = await db.musicLibrary.findUnique({
     where: { id: libraryId },
-  })
+  });
 
   if (!library) {
-    return { success: false, error: `音乐库不存在` }
+    return { success: false, error: `音乐库不存在` };
   }
 
-  const musicDir = path.join(root, library.name, 'music')
+  const musicDir = path.join(root, library.name, 'music');
 
   if (!fs.existsSync(musicDir)) {
-    fs.mkdirSync(musicDir, { recursive: true })
+    fs.mkdirSync(musicDir, { recursive: true });
   }
 
-  const imported = []
-  const skipped = []
+  const imported = [];
+  const skipped = [];
 
   for (const filePath of filePaths) {
     try {
-      const ext = path.extname(filePath).toLowerCase()
+      const ext = path.extname(filePath).toLowerCase();
+      // 此处的 ALL_IMPORTABLE_EXTENSIONS 和 SUPPORTED_EXTENSIONS 需在外部定义
       if (!ALL_IMPORTABLE_EXTENSIONS.includes(ext)) {
-        skipped.push(filePath)
-        continue
+        skipped.push(filePath);
+        continue;
       }
 
       if (!fs.existsSync(filePath)) {
-        skipped.push(filePath)
-        continue
+        skipped.push(filePath);
+        continue;
       }
 
-      const fileName = path.basename(filePath)
-      const destPath = path.join(musicDir, fileName)
+      const fileName = path.basename(filePath);
+      const destPath = path.join(musicDir, fileName);
 
-      let finalPath = destPath
-      let finalName = fileName
-      let counter = 1
+      let finalPath = destPath;
+      let finalName = fileName;
+      let counter = 1;
+
+      // 处理文件名冲突
       while (fs.existsSync(finalPath)) {
-        const nameWithoutExt = path.basename(filePath, ext)
-        finalName = `${nameWithoutExt}_${counter}${ext}`
-        finalPath = path.join(musicDir, finalName)
-        counter++
+        const nameWithoutExt = path.basename(filePath, ext);
+        finalName = `${nameWithoutExt}_${counter}${ext}`;
+        finalPath = path.join(musicDir, finalName);
+        counter++;
       }
 
-      fs.copyFileSync(filePath, finalPath)
+      fs.copyFileSync(filePath, finalPath);
 
       try {
-        const stats = fs.statSync(finalPath)
-        const trackId = crypto.randomUUID()
+        const stats = fs.statSync(finalPath);
+        const trackId = crypto.randomUUID();
+        const isEncrypted = ENCRYPTED_FORMATS.includes(ext.replace('.', ''));
 
-        await db.track.create({
-          data: {
-            id: trackId,
-            libraryId: library.id,
-            name: finalName,
-            title: path.basename(finalName, ext),
-            path: finalPath,
-            format: ext.replace('.', ''),
-            size: stats.size,
-            modified: stats.mtimeMs,
-            isEncrypted: ENCRYPTED_FORMATS.includes(ext.replace('.', '')),
-          },
-        })
+        // 初始化基础 Track 数据
+        const trackData = {
+          id: trackId,
+          libraryId: library.id,
+          name: finalName,
+          title: path.basename(finalName, ext), // 默认 title 为文件名
+          artist: '',                           // 默认 artist 为空
+          duration: 0,                          // 默认时长为 0
+          path: finalPath,
+          format: ext.replace('.', ''),
+          size: stats.size,
+          modified: stats.mtimeMs,
+          isEncrypted,
+        };
 
-        imported.push(finalPath)
+        // 如果是未加密的受支持格式，读取内置元数据
+        if (!isEncrypted && SUPPORTED_EXTENSIONS.includes(ext)) {
+          const meta = await parseAudioMetadata(finalPath);
+          const nameMeta = parseFileName(finalName);
+
+          // 优先级：文件内置元数据 > 文件名正则提取 > 默认文件名
+          trackData.title = meta.title || nameMeta.title || trackData.title;
+          trackData.artist = meta.artist || nameMeta.artist || '';
+          trackData.duration = meta.duration || 0;
+        }
+
+        // 存入 SQLite 数据库 (确保你的 Prisma/TypeORM Schema 中包含了 title, artist, duration 字段)
+        await db.track.create({ data: trackData });
+
+        imported.push(finalPath);
       } catch (dbErr) {
-        console.error(`[DB] Failed to insert track "${finalName}" into database, cleaning up file`)
-        try { fs.unlinkSync(finalPath) } catch (_) {}
-        skipped.push(filePath)
+        console.error(`[DB] 插入歌曲 "${finalName}" 失败，正在回滚文件:`, dbErr);
+        try { fs.unlinkSync(finalPath); } catch (_) {}
+        skipped.push(filePath);
       }
     } catch (e) {
-      skipped.push(filePath)
+      console.error(`[File] 处理文件 "${filePath}" 时发生未知错误:`, e);
+      skipped.push(filePath);
     }
   }
 
+  // 假设 ImportResultVO 已经定义
   return {
     success: true,
-    result: new ImportResultVO({ imported: imported.length, skipped: skipped.length }),
-  }
+    result: { imported: imported.length, skipped: skipped.length },
+  };
 }
 
 /**
@@ -835,19 +916,29 @@ async function syncWarehouseById(libraryId) {
   for (const file of newFiles) {
     try {
       const ext = path.extname(file.name).toLowerCase()
-      await db.track.create({
-        data: {
-          id: crypto.randomUUID(),
-          libraryId: library.id,
-          name: file.name,
-          title: path.basename(file.name, ext),
-          path: file.path,
-          format: ext.replace('.', ''),
-          size: file.size,
-          modified: file.modified,
-          isEncrypted: ENCRYPTED_FORMATS.includes(ext.replace('.', '')),
-        },
-      })
+      const isEncrypted = ENCRYPTED_FORMATS.includes(ext.replace('.', ''))
+
+      const trackData = {
+        id: crypto.randomUUID(),
+        libraryId: library.id,
+        name: file.name,
+        title: path.basename(file.name, ext),
+        path: file.path,
+        format: ext.replace('.', ''),
+        size: file.size,
+        modified: file.modified,
+        isEncrypted,
+      }
+
+      if (!isEncrypted && SUPPORTED_EXTENSIONS.includes(ext)) {
+        const meta = await parseAudioMetadata(file.path)
+        const nameMeta = parseFileName(file.name)
+        trackData.title = meta.title || nameMeta.title || trackData.title
+        trackData.artist = meta.artist || nameMeta.artist || ''
+        trackData.duration = meta.duration || 0
+      }
+
+      await db.track.create({ data: trackData })
       added++
     } catch (e) {
       // 可能路径重复，跳过
@@ -893,6 +984,56 @@ async function deleteWarehouseById(libraryId) {
   }
 }
 
+/**
+ * 更新曲目信息（编辑歌曲）
+ * @param {string} id
+ * @param {Object} data - { title?, artist?, album? }
+ * @returns {Promise<{ success: boolean, track?: Object, error?: string }>}
+ */
+async function updateTrack(id, data) {
+  const db = getDb()
+  try {
+    const track = await db.track.update({
+      where: { id },
+      data: {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.artist !== undefined && { artist: data.artist }),
+        ...(data.album !== undefined && { album: data.album }),
+      },
+    })
+    return { success: true, track }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 删除曲目（从数据库和文件系统）
+ * @param {string} id
+ * @returns {Promise<{ success: boolean, error?: string }>}
+ */
+async function deleteTrack(id) {
+  const db = getDb()
+  try {
+    const track = await db.track.findUnique({ where: { id } })
+    if (!track) return { success: false, error: '曲目不存在' }
+
+    await db.track.delete({ where: { id } })
+
+    try {
+      if (fs.existsSync(track.path)) {
+        fs.unlinkSync(track.path)
+      }
+    } catch (fsErr) {
+      console.error(`[DB] Warning: Failed to delete track file "${track.path}":`, fsErr.message)
+    }
+
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
 module.exports = {
   getMusicWarehouseRoot,
   getAllWarehouses,
@@ -910,4 +1051,6 @@ module.exports = {
   updateRecentPlayed,
   updateRecentPlayedById,
   resolveTrackById,
+  updateTrack,
+  deleteTrack,
 }

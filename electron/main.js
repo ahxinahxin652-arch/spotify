@@ -226,6 +226,18 @@ function startExpressServer() {
     res.json(await musicService.resolveTrackById(decodeURIComponent(id)))
   })
 
+  // 更新曲目信息（编辑歌曲）
+  expressApp.put('/api/music/tracks/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.updateTrack(decodeURIComponent(id), req.body))
+  })
+
+  // 删除曲目
+  expressApp.delete('/api/music/tracks/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.deleteTrack(decodeURIComponent(id)))
+  })
+
   // ---- 以下是 ID-based 的仓库操作 ----
 
   // 通过 library ID 获取曲目列表

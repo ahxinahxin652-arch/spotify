@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePlayerStore } from '../stores/player.js'
 import { useMusicLibraryStore } from '../stores/musicLibrary.js'
 
@@ -35,7 +35,15 @@ function closeSearch() {
   searchQuery.value = ''
 }
 
-// ---- 编辑弹窗状态 ----
+// ---- 编辑歌曲弹窗状态 ----
+const showEditTrackDialog = ref(false)
+const editTrackTitle = ref('')
+const editTrackArtist = ref('')
+const editTrackAlbum = ref('')
+const editTrackLoading = ref(false)
+const editingTrack = ref(null)
+
+// ---- 编辑音乐库弹窗状态 ----
 const showEditDialog = ref(false)
 const editName = ref('')
 const editDescription = ref('')
@@ -314,6 +322,53 @@ async function handleSaveEdit() {
     ElMessage.error(result.error || '保存失败')
   }
 }
+
+// ========== 编辑/删除曲目 ==========
+function handleTrackAction(cmd, track) {
+  if (cmd === 'edit') {
+    editingTrack.value = track
+    editTrackTitle.value = track.title || ''
+    editTrackArtist.value = track.artist || ''
+    editTrackAlbum.value = track.album || ''
+    showEditTrackDialog.value = true
+  } else if (cmd === 'delete') {
+    ElMessageBox.confirm(`确定要删除「${track.title || track.name}」吗？`, '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }).then(async () => {
+      const result = await window.electronAPI.deleteTrack(track.id)
+      if (result.success) {
+        ElMessage.success('删除成功')
+        await loadTracks()
+      } else {
+        ElMessage.error(result.error || '删除失败')
+      }
+    }).catch(() => {})
+  }
+}
+
+async function handleSaveTrackEdit() {
+  const title = editTrackTitle.value.trim()
+  if (!title) {
+    ElMessage.warning('歌曲名称不能为空')
+    return
+  }
+  editTrackLoading.value = true
+  const result = await window.electronAPI.updateTrack(editingTrack.value.id, {
+    title,
+    artist: editTrackArtist.value.trim(),
+    album: editTrackAlbum.value.trim(),
+  })
+  editTrackLoading.value = false
+  if (result.success) {
+    showEditTrackDialog.value = false
+    ElMessage.success('保存成功')
+    await loadTracks()
+  } else {
+    ElMessage.error(result.error || '保存失败')
+  }
+}
 </script>
 
 <template>
@@ -459,6 +514,7 @@ async function handleSaveEdit() {
           <span class="th-info">歌曲</span>
           <span class="th-date">添加时间</span>
           <span class="th-duration">时长</span>
+          <span class="th-actions"></span>
         </div>
         <ul class="track-list">
           <li
@@ -466,15 +522,14 @@ async function handleSaveEdit() {
             :key="track.path"
             class="track-item"
             :class="{ active: isCurrentTrack(track), playing: isCurrentTrack(track) && player.isPlaying }"
-            @click="playTrack(track, index)"
           >
-            <div class="track-num">
+            <div class="track-num" @click="playTrack(track, index)">
               <span class="num-text">{{ index + 1 }}</span>
               <svg class="num-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
             </div>
-            <div class="track-info-col">
+            <div class="track-info-col" @click="playTrack(track, index)">
               <div class="track-cover-sm">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M9 18V5l12-2v13"/>
@@ -487,8 +542,25 @@ async function handleSaveEdit() {
                 <span class="track-artist" :title="track.artist || '未知作者'">{{ track.artist || '未知作者' }}</span>
               </div>
             </div>
-            <div class="track-date">{{ formatDate(track.createdAt) }}</div>
-            <div class="track-duration">{{ track.duration ? formatTime(track.duration) : '' }}</div>
+            <div class="track-date" @click="playTrack(track, index)">{{ formatDate(track.createdAt) }}</div>
+            <div class="track-duration" @click="playTrack(track, index)">{{ track.duration ? formatTime(track.duration) : '' }}</div>
+            <div class="track-actions">
+              <el-dropdown trigger="click" @command="(cmd) => handleTrackAction(cmd, track, $event)">
+                <button class="track-menu-btn" @click.stop>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <circle cx="12" cy="19" r="2"/>
+                  </svg>
+                </button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="edit">编辑歌曲</el-dropdown-item>
+                    <el-dropdown-item command="delete">删除歌曲</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </li>
         </ul>
       </div>
@@ -549,6 +621,50 @@ async function handleSaveEdit() {
         <div class="edit-footer">
           <button class="btn btn-primary" @click="handleSaveEdit" :disabled="editLoading">
             {{ editLoading ? '保存中...' : '保存' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑歌曲对话框 -->
+    <div v-if="showEditTrackDialog" class="dialog-overlay" @click.self="showEditTrackDialog = false">
+      <div class="dialog edit-track-dialog" @click.stop>
+        <h3 class="dialog-title">编辑歌曲</h3>
+        <div class="edit-track-body">
+          <div class="edit-track-field">
+            <label class="field-label">歌曲名称</label>
+            <input
+              v-model="editTrackTitle"
+              class="dialog-input"
+              placeholder="歌曲名称"
+              maxlength="100"
+            />
+          </div>
+          <div class="edit-track-field">
+            <label class="field-label">艺术家</label>
+            <input
+              v-model="editTrackArtist"
+              class="dialog-input"
+              placeholder="艺术家（可选）"
+              maxlength="100"
+            />
+          </div>
+          <div class="edit-track-field">
+            <label class="field-label">专辑</label>
+            <input
+              v-model="editTrackAlbum"
+              class="dialog-input"
+              placeholder="专辑（可选）"
+              maxlength="100"
+            />
+          </div>
+        </div>
+        <div class="edit-footer">
+          <button class="btn btn-secondary" @click="showEditTrackDialog = false" :disabled="editTrackLoading">
+            取消
+          </button>
+          <button class="btn btn-primary" @click="handleSaveTrackEdit" :disabled="editTrackLoading">
+            {{ editTrackLoading ? '保存中...' : '保存' }}
           </button>
         </div>
       </div>

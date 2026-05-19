@@ -88,6 +88,16 @@ function resolveTrackById(trackId) {
   return apiFetch(`/api/music/tracks/${encodeURIComponent(trackId)}`)
 }
 
+/** 更新曲目信息（编辑歌曲） */
+function updateTrack(trackId, data) {
+  return apiFetch(`/api/music/tracks/${encodeURIComponent(trackId)}`, { method: 'PUT', body: data })
+}
+
+/** 删除曲目 */
+function deleteTrack(trackId) {
+  return apiFetch(`/api/music/tracks/${encodeURIComponent(trackId)}`, { method: 'DELETE' })
+}
+
 /** @returns {Promise<string|null>} */
 async function getMusicWarehouseDir() {
   const r = await apiFetch('/api/music/warehouse-dir')
@@ -218,6 +228,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importFilesToWarehouseById,
   syncWarehouseById,
   resolveTrackById,
+  updateTrack,
+  deleteTrack,
   getMusicWarehouseDir,
   // 格式转换
   scanFiles,

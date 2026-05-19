@@ -236,6 +236,29 @@ async function updateRecentPlayedById(libraryId) {
   return ApiResult.ok(null)
 }
 
+/**
+ * 更新曲目信息
+ * @param {string} trackId
+ * @param {Object} data - { title?, artist?, album? }
+ * @returns {Promise<ApiResult>}
+ */
+async function updateTrack(trackId, data) {
+  const result = await musicDao.updateTrack(trackId, data)
+  if (!result.success) return ApiResult.fail(result.error || '更新失败')
+  return ApiResult.ok({ track: result.track })
+}
+
+/**
+ * 删除曲目
+ * @param {string} trackId
+ * @returns {Promise<ApiResult>}
+ */
+async function deleteTrack(trackId) {
+  const result = await musicDao.deleteTrack(trackId)
+  if (!result.success) return ApiResult.fail(result.error || '删除失败')
+  return ApiResult.ok(null, '删除成功')
+}
+
 module.exports = {
   getMusicWarehouses,
   createMusicWarehouse,
@@ -253,4 +276,6 @@ module.exports = {
   syncWarehouseById,
   updateRecentPlayed,
   updateRecentPlayedById,
+  updateTrack,
+  deleteTrack,
 }
