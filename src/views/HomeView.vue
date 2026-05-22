@@ -323,7 +323,7 @@ async function handleImportFiles(warehouseId, files) {
         </div>
       </div>
 
-      <div v-else class="empty-state">
+      <div v-else class="empty-home-state">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
           <path d="M9 18V5l12-2v13"/>
           <circle cx="6" cy="18" r="3"/>
@@ -347,6 +347,20 @@ async function handleImportFiles(warehouseId, files) {
           <div class="tool-info">
             <span class="tool-name">解密音乐</span>
             <span class="tool-desc">解密酷狗/QQ音乐/网易云/酷我等加密格式</span>
+          </div>
+        </div>
+
+        <div class="tool-card" @click="router.push('/lyrics-unlock')">
+          <div class="tool-icon lyrics-unlock" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <path d="M8 10h8"/>
+              <path d="M8 14h4"/>
+            </svg>
+          </div>
+          <div class="tool-info">
+            <span class="tool-name">解密歌词</span>
+            <span class="tool-desc">解密酷狗等平台的专属加密歌词文件为lrc</span>
           </div>
         </div>
 

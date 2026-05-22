@@ -17,6 +17,11 @@ const routes = [
     component: () => import('../views/MusicUnlockView.vue'),
   },
   {
+    path: '/lyrics-unlock',
+    name: 'LyricsUnlock',
+    component: () => import('../views/LyricsUnlockView.vue'),
+  },
+  {
     path: '/converter',
     name: 'MusicConverter',
     component: () => import('../views/MusicConverterView.vue'),

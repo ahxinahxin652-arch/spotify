@@ -4,6 +4,7 @@ import { ref } from 'vue'
 // ========== localStorage 字段常量 ==========
 const KEY_MUSIC_UNLOCK_OUTPUT = 'music_unlock_output'
 const KEY_MUSIC_CONVERT_OUTPUT = 'music_convert_output'
+const KEY_LYRICS_UNLOCK_OUTPUT = 'lyrics_unlock_output'
 const KEY_IS_RIGHT_BAR_SHOW = 'is_right_bar_show'
 
 // ========== localStorage 管理 Store ==========
@@ -11,6 +12,7 @@ export const useLocalStorageStore = defineStore('localStorage', () => {
   // ---- 状态 ----
   const musicUnlockOutput = ref(localStorage.getItem(KEY_MUSIC_UNLOCK_OUTPUT) || '')
   const musicConvertOutput = ref(localStorage.getItem(KEY_MUSIC_CONVERT_OUTPUT) || '')
+  const lyricsUnlockOutput = ref(localStorage.getItem(KEY_LYRICS_UNLOCK_OUTPUT) || '')
   const isRightBarShow = ref(localStorage.getItem(KEY_IS_RIGHT_BAR_SHOW) === 'true')
 
   // ---- Actions ----
@@ -42,6 +44,19 @@ export const useLocalStorageStore = defineStore('localStorage', () => {
   }
 
   /**
+   * 设置歌词解密输出目录
+   * @param {string} path
+   */
+  function setLyricsUnlockOutput(path) {
+    lyricsUnlockOutput.value = path
+    if (path) {
+      localStorage.setItem(KEY_LYRICS_UNLOCK_OUTPUT, path)
+    } else {
+      localStorage.removeItem(KEY_LYRICS_UNLOCK_OUTPUT)
+    }
+  }
+
+  /**
    * 设置右侧边栏显示状态
    * @param {boolean} val
    */
@@ -53,9 +68,11 @@ export const useLocalStorageStore = defineStore('localStorage', () => {
   return {
     musicUnlockOutput,
     musicConvertOutput,
+    lyricsUnlockOutput,
     isRightBarShow,
     setMusicUnlockOutput,
     setMusicConvertOutput,
+    setLyricsUnlockOutput,
     setRightBarShow,
   }
 })

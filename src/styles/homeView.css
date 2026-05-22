@@ -364,13 +364,13 @@
 }
 
 /* ========== 空状态 ========== */
-.empty-state {
+.empty-home-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    padding: 40px;
+    padding: 20px;
     color: var(--text);
     opacity: 0.5;
     text-align: center;

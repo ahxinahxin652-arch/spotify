@@ -96,6 +96,18 @@ function onSidebarAfterLeave() {
         </button>
         <button
           class="nav-btn"
+          :class="{ active: currentRoute === 'LyricsUnlock' }"
+          @click="router.push('/lyrics-unlock')"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <path d="M8 10h8"/>
+            <path d="M8 14h4"/>
+          </svg>
+          解密歌词
+        </button>
+        <button
+          class="nav-btn"
           :class="{ active: currentRoute === 'MusicConverter' }"
           @click="router.push('/converter')"
         >

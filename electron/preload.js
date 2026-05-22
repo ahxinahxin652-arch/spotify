@@ -120,6 +120,18 @@ function decryptFile({ inputPath, outputPath, outputFormat }) {
   return apiFetch('/api/decrypt/file', { method: 'POST', body: { inputPath, outputPath, outputFormat } })
 }
 
+// ========== 歌词解密 API ==========
+
+/** @returns {Promise<{ success: boolean, data?: { files: Array<{name: string, path: string, size: number}> }, error?: string }>} */
+function scanLyricsDecryptFiles(filePaths) {
+  return apiFetch('/api/lyrics-decrypt/scan', { method: 'POST', body: { filePaths } })
+}
+
+/** @returns {Promise<{ success: boolean, data?: null, message?: string, error?: string }>} */
+function startLyricsDecrypt({ files, outputPath }) {
+  return apiFetch('/api/lyrics-decrypt/start', { method: 'POST', body: { files, outputPath } })
+}
+
 // ========== 进度监听 ==========
 let progressCallback = null
 ipcRenderer.on('convert-progress', (event, data) => {
@@ -135,6 +147,14 @@ ipcRenderer.on('decrypt-progress', (event, data) => {
 })
 function onDecryptProgress(callback) {
   decryptProgressCallback = callback
+}
+
+let lyricsDecryptProgressCallback = null
+ipcRenderer.on('lyrics-decrypt-progress', (event, data) => {
+  if (lyricsDecryptProgressCallback) lyricsDecryptProgressCallback(data)
+})
+function onLyricsDecryptProgress(callback) {
+  lyricsDecryptProgressCallback = callback
 }
 
 // ========== 读取文件为 Blob ==========
@@ -217,6 +237,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanDecryptFiles,
   startDecrypt,
   decryptFile,
+  // 歌词解密
+  scanLyricsDecryptFiles,
+  startLyricsDecrypt,
+  onLyricsDecryptProgress,
   // 进度 & 窗口
   onConvertProgress,
   onDecryptProgress,
