@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { usePlayerStore } from '../stores/player.js'
 import '../styles/musicEditView.css'
 
 const router = useRouter()
@@ -163,6 +164,17 @@ async function saveMetadata() {
     const result = await window.electronAPI.updateFileMetadata(payload)
     if (result.success) {
       ElMessage.success('保存成功')
+      
+      // 如果修改的恰好是正在播放的音乐，同步更新内存状态
+      const player = usePlayerStore()
+      if (player.currentTrack && player.currentTrack.path === filePath.value) {
+        player.currentTrack.title = metaForm.value.title || player.currentTrack.title
+        player.currentTrack.artist = metaForm.value.artist || player.currentTrack.artist
+        player.currentTrack.album = metaForm.value.album || player.currentTrack.album
+        if (coverChanged.value) {
+          player.currentTrack.cover = coverBase64.value
+        }
+      }
     } else {
       ElMessage.error(result.error || '保存失败')
     }
