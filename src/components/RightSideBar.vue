@@ -12,44 +12,16 @@ function closeSidebar() {
   localStorageStore.setRightBarShow(false)
 }
 
-// 格式化时间
-function formatTime(seconds) {
-  if (!seconds || isNaN(seconds)) return '--:--'
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 
-// 从文件名中提取歌名和作者（简单处理）
-function parseTrackName(rawName) {
-  const name = rawName || ''
-  // 尝试用 " - " 分割歌名和作者
-  const parts = name.split(' - ')
-  if (parts.length >= 2) {
-    return {
-      title: parts.slice(0, -1).join(' - ').trim(),
-      artist: parts[parts.length - 1].replace(/\.[^.]+$/, '').trim(),
-    }
-  }
-  // 尝试用空格分割（取前两部分）
-  const spaceParts = name.split(/\s+/)
-  if (spaceParts.length >= 2) {
-    return {
-      title: spaceParts.slice(0, -1).join(' '),
-      artist: spaceParts[spaceParts.length - 1].replace(/\.[^.]+$/, ''),
-    }
-  }
-  return {
-    title: name.replace(/\.[^.]+$/, ''),
-    artist: '',
-  }
-}
 
 const trackInfo = () => {
   if (!player.currentTrack) {
     return { title: '未播放', artist: '' }
   }
-  return parseTrackName(player.currentTrack.name)
+  return {
+    title: player.currentTrack.title || player.currentTrack.name,
+    artist: player.currentTrack.artist || ''
+  }
 }
 </script>
 
@@ -95,19 +67,7 @@ const trackInfo = () => {
         </span>
       </div>
 
-      <!-- 进度条 -->
-      <div class="sidebar-progress" v-if="player.currentTrack">
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            :style="{ width: (player.duration > 0 ? player.currentTime / player.duration * 100 : 0) + '%' }"
-          ></div>
-        </div>
-        <div class="progress-time">
-          <span>{{ formatTime(player.currentTime) }}</span>
-          <span>{{ formatTime(player.duration) }}</span>
-        </div>
-      </div>
+
 
       <!-- 空状态 -->
       <div v-if="!player.currentTrack" class="sidebar-empty">
