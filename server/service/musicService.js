@@ -1,6 +1,11 @@
 const musicDao = require('../dao/musicDao')
 const fs = require('fs')
+const path = require('path')
+const os = require('os')
 const ApiResult = require('../pojo/vo/ApiResult')
+const ffmetadata = require('ffmetadata')
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path
+ffmetadata.setFfmpegPath(ffmpegPath)
 
 // ========== 音乐仓库 Service ==========
 
@@ -193,6 +198,123 @@ async function deleteTrack(trackId) {
   return ApiResult.ok(null, '删除成功')
 }
 
+/**
+ * 读取独立文件的元数据（使用 music-metadata）
+ */
+async function getFileMetadata(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return ApiResult.fail('文件不存在')
+  }
+  try {
+    const { parseFile } = await import('music-metadata')
+    const meta = await parseFile(filePath)
+    let coverBase64 = ''
+    if (meta.common.picture && meta.common.picture.length > 0) {
+      const pic = meta.common.picture[0]
+      coverBase64 = `data:${pic.format};base64,${pic.data.toString('base64')}`
+    }
+    return ApiResult.ok({
+      title: meta.common.title || '',
+      artist: meta.common.artist || '',
+      album: meta.common.album || '',
+      albumArtist: meta.common.albumartist || '',
+      genre: meta.common.genre ? meta.common.genre.join(', ') : '',
+      year: meta.common.year || meta.common.date || '',
+      trackNumber: meta.common.track?.no || '',
+      totalTracks: meta.common.track?.of || '',
+      discNumber: meta.common.disk?.no || '',
+      totalDiscs: meta.common.disk?.of || '',
+      comment: meta.common.comment ? meta.common.comment.join(', ') : '',
+      cover: coverBase64
+    })
+  } catch (err) {
+    return ApiResult.fail('解析元数据失败: ' + err.message)
+  }
+}
+
+/**
+ * 写入独立文件的元数据并更新可能关联的数据库记录（使用 ffmetadata）
+ */
+async function updateFileMetadata(filePath, data) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return ApiResult.fail('文件不存在')
+  }
+  return new Promise((resolve) => {
+    // 映射 ffmetadata 支持的字段
+    const ffData = {}
+    if (data.title) ffData.title = data.title
+    if (data.artist) ffData.artist = data.artist
+    if (data.album) ffData.album = data.album
+    if (data.albumArtist) ffData.album_artist = data.albumArtist
+    if (data.genre) ffData.genre = data.genre
+    if (data.year) ffData.date = data.year
+    if (data.comment) ffData.comment = data.comment
+
+    let trackNo = data.trackNumber || ''
+    if (data.totalTracks) trackNo += '/' + data.totalTracks
+    if (trackNo) ffData.track = trackNo
+
+    let discNo = data.discNumber || ''
+    if (data.totalDiscs) discNo += '/' + data.totalDiscs
+    if (discNo) ffData.disc = discNo
+
+    const options = {}
+    let tempCoverPath = null
+
+    // 处理封面图片，将 base64 转换为临时文件
+    if (data.coverBase64 && data.coverBase64.startsWith('data:image')) {
+      try {
+        const matches = data.coverBase64.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/)
+        if (matches && matches.length === 3) {
+          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1]
+          const base64Data = matches[2]
+          const buffer = Buffer.from(base64Data, 'base64')
+          tempCoverPath = path.join(os.tmpdir(), `cover_${Date.now()}.${ext}`)
+          fs.writeFileSync(tempCoverPath, buffer)
+          options.attachments = [tempCoverPath]
+        }
+      } catch (e) {
+        console.warn('保存封面失败', e)
+      }
+    }
+
+    ffmetadata.write(filePath, ffData, options, async (err) => {
+      // 写入后清理临时封面文件
+      if (tempCoverPath && fs.existsSync(tempCoverPath)) {
+        try { fs.unlinkSync(tempCoverPath) } catch (_) {}
+      }
+
+      if (err) {
+        console.error('保存文件元数据失败', err)
+        resolve(ApiResult.fail('保存文件元数据失败: ' + err.message))
+        return
+      }
+
+      // 如果有对应的数据库记录，同步更新数据库 (使用 absolute path 匹配)
+      try {
+        const { getDb } = require('../dao/db')
+        const db = getDb()
+        const track = await db.track.findFirst({ where: { path: filePath } })
+        if (track) {
+          await db.track.update({
+            where: { id: track.id },
+            data: {
+              title: data.title || track.title,
+              artist: data.artist || track.artist,
+              album: data.album || track.album,
+            }
+          })
+        }
+      } catch (dbErr) {
+        console.error('更新数据库记录失败', dbErr)
+        // 即使数据库更新失败，文件也已经更新了
+      }
+
+      resolve(ApiResult.ok(null, '保存成功'))
+    })
+  })
+}
+
 module.exports = {
   getMusicWarehouses,
   createMusicWarehouse,
@@ -206,4 +328,6 @@ module.exports = {
   updateRecentPlayedById,
   updateTrack,
   deleteTrack,
+  getFileMetadata,
+  updateFileMetadata
 }

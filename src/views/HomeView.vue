@@ -365,18 +365,16 @@ async function handleImportFiles(warehouseId, files) {
           </div>
         </div>
 
-        <div class="tool-card" @click="router.push('/converter')">
-          <div class="tool-icon converter">
+        <div class="tool-card" @click="router.push('/edit')">
+          <div class="tool-icon edit">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="16 3 21 3 21 8"/>
-              <line x1="4" y1="20" x2="21" y2="3"/>
-              <polyline points="21 16 21 21 16 21"/>
-              <line x1="15" y1="15" x2="21" y2="21"/>
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </div>
           <div class="tool-info">
-            <span class="tool-name">格式转换</span>
-            <span class="tool-desc">将 FLAC 等无损格式转换为 MP3</span>
+            <span class="tool-name">编辑歌曲</span>
+            <span class="tool-desc">编辑音乐文件的封面和详细信息</span>
           </div>
         </div>
       </div>

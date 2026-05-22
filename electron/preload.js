@@ -75,6 +75,16 @@ function deleteTrack(trackId) {
   return apiFetch(`/api/music/tracks/${encodeURIComponent(trackId)}`, { method: 'DELETE' })
 }
 
+/** 读取独立文件的元数据 */
+function getFileMetadata(path) {
+  return apiFetch(`/api/music/metadata?path=${encodeURIComponent(path)}`)
+}
+
+/** 写入独立文件的元数据 */
+function updateFileMetadata(data) {
+  return apiFetch('/api/music/metadata', { method: 'POST', body: data })
+}
+
 // ========== 格式转换 API ==========
 
 /** @returns {Promise<{ success: boolean, data?: { files: Array<{name: string, path: string, size: number}> }, error?: string }>} */
@@ -197,6 +207,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   resolveTrackById,
   updateTrack,
   deleteTrack,
+  getFileMetadata,
+  updateFileMetadata,
   // 格式转换
   scanFiles,
   startConvert,

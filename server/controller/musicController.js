@@ -77,5 +77,16 @@ module.exports = function(mainWindow) {
     res.json(await musicService.deleteMusicWarehouseById(decodeURIComponent(id)))
   })
 
+  // 读取文件的元数据
+  router.get('/metadata', async (req, res) => {
+    const { path } = req.query
+    res.json(await musicService.getFileMetadata(path))
+  })
+
+  // 更新文件的元数据
+  router.post('/metadata', async (req, res) => {
+    res.json(await musicService.updateFileMetadata(req.body.path, req.body))
+  })
+
   return router
 }

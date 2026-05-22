@@ -323,11 +323,7 @@ async function handleSaveEdit() {
 // ========== 编辑/删除曲目 ==========
 function handleTrackAction(cmd, track) {
   if (cmd === 'edit') {
-    editingTrack.value = track
-    editTrackTitle.value = track.title || ''
-    editTrackArtist.value = track.artist || ''
-    editTrackAlbum.value = track.album || ''
-    showEditTrackDialog.value = true
+    router.push(`/edit?path=${encodeURIComponent(track.path)}`)
   } else if (cmd === 'delete') {
     ElMessageBox.confirm(`确定要删除「${track.title || track.name}」吗？`, '删除确认', {
       confirmButtonText: '确定',
