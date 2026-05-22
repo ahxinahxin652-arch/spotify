@@ -2,10 +2,9 @@ const musicDao = require('../dao/musicDao')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const { execFile } = require('child_process')
 const ApiResult = require('../pojo/vo/ApiResult')
-const ffmetadata = require('ffmetadata')
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path
-ffmetadata.setFfmpegPath(ffmpegPath)
 
 // ========== 音乐仓库 Service ==========
 
@@ -199,6 +198,19 @@ async function deleteTrack(trackId) {
 }
 
 /**
+ * 标准化图片 MIME 类型
+ * music-metadata 可能返回 'jpg'、'png' 等非标准值
+ */
+function normalizeMimeType(format) {
+  if (!format) return 'image/jpeg'
+  // 已经是完整 MIME 类型
+  if (format.startsWith('image/')) return format
+  // 简写 → 标准 MIME
+  const map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', bmp: 'image/bmp', webp: 'image/webp' }
+  return map[format.toLowerCase()] || 'image/jpeg'
+}
+
+/**
  * 读取独立文件的元数据（使用 music-metadata）
  */
 async function getFileMetadata(filePath) {
@@ -211,7 +223,10 @@ async function getFileMetadata(filePath) {
     let coverBase64 = ''
     if (meta.common.picture && meta.common.picture.length > 0) {
       const pic = meta.common.picture[0]
-      coverBase64 = `data:${pic.format};base64,${pic.data.toString('base64')}`
+      const mime = normalizeMimeType(pic.format)
+      // pic.data 可能是 Uint8Array（music-metadata v11+），需先转为 Buffer 才能正确 base64 编码
+      const buf = Buffer.isBuffer(pic.data) ? pic.data : Buffer.from(pic.data)
+      coverBase64 = `data:${mime};base64,${buf.toString('base64')}`
     }
     return ApiResult.ok({
       title: meta.common.title || '',
@@ -233,61 +248,123 @@ async function getFileMetadata(filePath) {
 }
 
 /**
- * 写入独立文件的元数据并更新可能关联的数据库记录（使用 ffmetadata）
+ * 写入独立文件的元数据并更新可能关联的数据库记录
+ * 使用 child_process.execFile 直接调用 ffmpeg，精确控制流映射
  */
 async function updateFileMetadata(filePath, data) {
   if (!filePath || !fs.existsSync(filePath)) {
     return ApiResult.fail('文件不存在')
   }
-  return new Promise((resolve) => {
-    // 映射 ffmetadata 支持的字段
-    const ffData = {}
-    if (data.title) ffData.title = data.title
-    if (data.artist) ffData.artist = data.artist
-    if (data.album) ffData.album = data.album
-    if (data.albumArtist) ffData.album_artist = data.albumArtist
-    if (data.genre) ffData.genre = data.genre
-    if (data.year) ffData.date = data.year
-    if (data.comment) ffData.comment = data.comment
 
-    let trackNo = data.trackNumber || ''
-    if (data.totalTracks) trackNo += '/' + data.totalTracks
-    if (trackNo) ffData.track = trackNo
-
-    let discNo = data.discNumber || ''
-    if (data.totalDiscs) discNo += '/' + data.totalDiscs
-    if (discNo) ffData.disc = discNo
-
-    const options = {}
-    let tempCoverPath = null
-
-    // 处理封面图片，将 base64 转换为临时文件
-    if (data.coverBase64 && data.coverBase64.startsWith('data:image')) {
-      try {
-        const matches = data.coverBase64.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/)
-        if (matches && matches.length === 3) {
-          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1]
-          const base64Data = matches[2]
-          const buffer = Buffer.from(base64Data, 'base64')
-          tempCoverPath = path.join(os.tmpdir(), `cover_${Date.now()}.${ext}`)
-          fs.writeFileSync(tempCoverPath, buffer)
-          options.attachments = [tempCoverPath]
-        }
-      } catch (e) {
-        console.warn('保存封面失败', e)
-      }
+  // 构建 metadata 键值对
+  const metaArgs = []
+  const addMeta = (key, value) => {
+    if (value !== undefined && value !== null && value !== '') {
+      metaArgs.push('-metadata', `${key}=${value}`)
     }
+  }
+  addMeta('title', data.title)
+  addMeta('artist', data.artist)
+  addMeta('album', data.album)
+  addMeta('album_artist', data.albumArtist)
+  addMeta('genre', data.genre)
+  addMeta('date', data.year)
+  addMeta('comment', data.comment)
 
-    ffmetadata.write(filePath, ffData, options, async (err) => {
-      // 写入后清理临时封面文件
+  let trackNo = data.trackNumber ? String(data.trackNumber) : ''
+  if (data.totalTracks) trackNo += '/' + data.totalTracks
+  addMeta('track', trackNo)
+
+  let discNo = data.discNumber ? String(data.discNumber) : ''
+  if (data.totalDiscs) discNo += '/' + data.totalDiscs
+  addMeta('disc', discNo)
+
+  // 临时输出路径
+  const ext = path.extname(filePath)
+  const basename = path.basename(filePath, ext)
+  const dst = path.join(path.dirname(filePath), `${basename}.ffmetadata${ext}`)
+
+  let tempCoverPath = null
+  const hasNewCover = data.coverBase64 && data.coverBase64.startsWith('data:image')
+  // coverBase64 === '' 表示用户主动移除了封面
+  const removeCover = data.coverBase64 === ''
+
+  // 如果有新封面，先写入临时文件
+  if (hasNewCover) {
+    try {
+      const matches = data.coverBase64.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/)
+      if (matches && matches.length === 3) {
+        const imgExt = matches[1] === 'jpeg' ? 'jpg' : matches[1]
+        const buffer = Buffer.from(matches[2], 'base64')
+        tempCoverPath = path.join(os.tmpdir(), `cover_${Date.now()}.${imgExt}`)
+        fs.writeFileSync(tempCoverPath, buffer)
+      }
+    } catch (e) {
+      console.warn('写入临时封面文件失败:', e)
+    }
+  }
+
+  // 构建 ffmpeg 参数
+  const args = ['-y'] // 覆盖输出
+
+  // Input #0: 原始文件
+  args.push('-i', filePath)
+
+  if (hasNewCover && tempCoverPath) {
+    // Input #1: 新封面图片
+    args.push('-i', tempCoverPath)
+    // 映射: 原始音频流 + 新封面
+    args.push('-map', '0:a', '-map', '1:0')
+    // 标记为封面
+    args.push('-disposition:v:0', 'attached_pic')
+    args.push('-metadata:s:v', 'comment=Cover (front)')
+  } else if (removeCover) {
+    // 只保留音频流，移除所有视频/图片流
+    args.push('-map', '0:a')
+  } else {
+    // 保留原始所有流（包括已有封面）
+    args.push('-map', '0')
+  }
+
+  // 不重新编码
+  args.push('-c', 'copy')
+
+  // 添加 metadata
+  args.push(...metaArgs)
+
+  // 输出到临时文件
+  args.push(dst)
+
+  return new Promise((resolve) => {
+    execFile(ffmpegPath, args, { maxBuffer: 10 * 1024 * 1024 }, async (err, stdout, stderr) => {
+      // 清理临时封面文件
       if (tempCoverPath && fs.existsSync(tempCoverPath)) {
         try { fs.unlinkSync(tempCoverPath) } catch (_) {}
       }
 
       if (err) {
-        console.error('保存文件元数据失败', err)
-        resolve(ApiResult.fail('保存文件元数据失败: ' + err.message))
+        // 清理输出文件
+        if (fs.existsSync(dst)) {
+          try { fs.unlinkSync(dst) } catch (_) {}
+        }
+        console.error('保存文件元数据失败:', stderr || err.message)
+        resolve(ApiResult.fail('保存文件元数据失败: ' + (stderr || err.message)))
         return
+      }
+
+      // 用输出文件替换原始文件
+      try {
+        fs.renameSync(dst, filePath)
+      } catch (renameErr) {
+        // rename 失败时尝试 copy + delete
+        try {
+          fs.copyFileSync(dst, filePath)
+          fs.unlinkSync(dst)
+        } catch (copyErr) {
+          console.error('替换原始文件失败:', copyErr)
+          resolve(ApiResult.fail('替换原始文件失败: ' + copyErr.message))
+          return
+        }
       }
 
       // 如果有对应的数据库记录，同步更新数据库 (使用 absolute path 匹配)
@@ -306,7 +383,7 @@ async function updateFileMetadata(filePath, data) {
           })
         }
       } catch (dbErr) {
-        console.error('更新数据库记录失败', dbErr)
+        console.error('更新数据库记录失败:', dbErr)
         // 即使数据库更新失败，文件也已经更新了
       }
 

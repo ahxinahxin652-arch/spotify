@@ -14,6 +14,7 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 
 const coverBase64 = ref('')
+const coverChanged = ref(false) // 追踪用户是否修改了封面
 const coverHover = ref(false)
 const coverInputRef = ref(null)
 
@@ -73,6 +74,7 @@ async function loadFile(path) {
         comment: data.comment || ''
       }
       coverBase64.value = data.cover || ''
+      coverChanged.value = false
       isLoaded.value = true
     } else {
       ElMessage.error(result.error || '读取失败')
@@ -100,6 +102,7 @@ async function handleCoverUpload(e) {
   try {
     const base64 = await resizeImage(file, COMPRESS_SIZE)
     coverBase64.value = base64
+    coverChanged.value = true
   } catch (err) {
     ElMessage.error(err.message || '图片处理失败')
   }
@@ -108,6 +111,7 @@ async function handleCoverUpload(e) {
 
 function removeCover() {
   coverBase64.value = ''
+  coverChanged.value = true
 }
 
 function resizeImage(file, maxPx) {
@@ -148,11 +152,15 @@ async function saveMetadata() {
   isSaving.value = true
   
   try {
-    const result = await window.electronAPI.updateFileMetadata({
+    const payload = {
       path: filePath.value,
-      coverBase64: coverBase64.value,
       ...metaForm.value
-    })
+    }
+    // 仅在用户修改了封面时才传递 coverBase64
+    if (coverChanged.value) {
+      payload.coverBase64 = coverBase64.value
+    }
+    const result = await window.electronAPI.updateFileMetadata(payload)
     if (result.success) {
       ElMessage.success('保存成功')
     } else {

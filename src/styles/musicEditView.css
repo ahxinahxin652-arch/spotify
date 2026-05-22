@@ -294,7 +294,7 @@
 .split-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 6px 16px;
   padding: 0;
   background: none;
   border: none;
