@@ -15,7 +15,7 @@ const warehouseInfo = ref({ name: '', description: '', coverPath: '' })
 const tracks = ref([])
 const isLoading = ref(false)
 const searchQuery = ref('')
-const sortBy = ref('name') // 'name' | 'size' | 'modified'
+const sortBy = ref('artist') // 'artist' | 'size' | 'modified'
 const showSearch = ref(false)
 const searchInputRef = ref(null)
 
@@ -87,8 +87,8 @@ const filteredTracks = computed(() => {
     const q = searchQuery.value.toLowerCase()
     list = list.filter(t => t.name.toLowerCase().includes(q))
   }
-  if (sortBy.value === 'name') {
-    list.sort((a, b) => a.name.localeCompare(b.name))
+  if (sortBy.value === 'artist') {
+    list.sort((a, b) => (a.artist || '未知作者').localeCompare(b.artist || '未知作者'))
   } else if (sortBy.value === 'size') {
     list.sort((a, b) => b.size - a.size)
   } else if (sortBy.value === 'modified') {
@@ -127,10 +127,14 @@ function formatDate(dateStr) {
 }
 
 function playTrack(track, index) {
-  player.setPlaylist(filteredTracks.value, index)
-  window.dispatchEvent(new CustomEvent('play-track', {
-    detail: { track, playlist: filteredTracks.value, index }
-  }))
+  if (isCurrentTrack(track)) {
+    window.dispatchEvent(new CustomEvent('toggle-play'))
+  } else {
+    player.setPlaylist(filteredTracks.value, index)
+    window.dispatchEvent(new CustomEvent('play-track', {
+      detail: { track, playlist: filteredTracks.value, index }
+    }))
+  }
 }
 
 function playAll() {
@@ -473,11 +477,25 @@ async function handleSaveTrackEdit() {
             </svg>
           </button>
         </div>
-        <select v-model="sortBy" class="sort-select">
-          <option value="name">按名称</option>
-          <option value="size">按大小</option>
-          <option value="modified">按修改时间</option>
-        </select>
+        <el-dropdown trigger="click" @command="(cmd) => sortBy = cmd" popper-class="warehouse-dropdown">
+          <div class="custom-select-wrapper">
+            <div class="sort-select-display">
+              {{ sortBy === 'artist' ? '按作者' : (sortBy === 'size' ? '按大小' : '按修改时间') }}
+            </div>
+            <div class="select-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="artist" :class="{ 'is-active': sortBy === 'artist' }">按作者</el-dropdown-item>
+              <el-dropdown-item command="size" :class="{ 'is-active': sortBy === 'size' }">按大小</el-dropdown-item>
+              <el-dropdown-item command="modified" :class="{ 'is-active': sortBy === 'modified' }">按修改时间</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <button class="btn btn-add" @click="handleAddFiles">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -530,6 +548,13 @@ async function handleSaveTrackEdit() {
               <svg class="num-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3"/>
               </svg>
+              <svg class="num-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+              <div class="equalizer">
+                <span></span><span></span><span></span>
+              </div>
             </div>
             <div class="track-info-col" @click="playTrack(track, index)">
               <div class="track-cover-sm">
@@ -548,12 +573,12 @@ async function handleSaveTrackEdit() {
             <div class="track-date" @click="playTrack(track, index)">{{ formatDate(track.createdAt) }}</div>
             <div class="track-duration" @click="playTrack(track, index)">{{ track.duration ? formatTime(track.duration) : '' }}</div>
             <div class="track-actions">
-              <el-dropdown trigger="click" @command="(cmd) => handleTrackAction(cmd, track, $event)">
+              <el-dropdown trigger="click" @command="(cmd) => handleTrackAction(cmd, track, $event)" popper-class="warehouse-dropdown">
                 <button class="track-menu-btn" @click.stop>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="5" r="2"/>
+                    <circle cx="5" cy="12" r="2"/>
                     <circle cx="12" cy="12" r="2"/>
-                    <circle cx="12" cy="19" r="2"/>
+                    <circle cx="19" cy="12" r="2"/>
                   </svg>
                 </button>
                 <template #dropdown>

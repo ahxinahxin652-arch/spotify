@@ -298,30 +298,41 @@
 }
 
 /* 排序下拉 */
-.sort-select {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 10px;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 12px;
-    outline: none;
+.custom-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+    margin-right: 8px;
     cursor: pointer;
-    transition: border-color 0.15s;
 }
 
-.sort-select:hover {
-    border-color: var(--text);
-}
-
-.sort-select:focus {
-    border-color: var(--accent);
-}
-
-.sort-select option {
-    background: var(--surface);
+.sort-select-display {
+    padding: 8px 32px 8px 16px;
     color: var(--text-h);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.custom-select-wrapper:hover .sort-select-display {
+    color: var(--accent);
+}
+
+.select-arrow {
+    position: absolute;
+    right: 10px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    color: var(--text);
+    opacity: 0.6;
+}
+.custom-select-wrapper:hover .select-arrow {
+    color: var(--accent);
+    opacity: 1;
 }
 
 /* ========== 内联搜索栏（从图标向左展开） ========== */
@@ -549,15 +560,6 @@
     color: var(--accent);
 }
 
-.track-item.active .num-text {
-    display: none;
-}
-
-.track-item.active .num-play {
-    display: block;
-    color: var(--accent);
-}
-
 /* 序号 / 播放图标 */
 .track-num {
     width: 32px;
@@ -573,14 +575,64 @@
     font-family: var(--mono);
     color: var(--text);
     opacity: 0.6;
+    display: block;
 }
 
-.num-play {
+.num-play, .num-pause {
     display: none;
     color: var(--text-h);
 }
 
-.track-item.playing .num-play {
+.equalizer {
+    display: none;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+    width: 14px;
+}
+.equalizer span {
+    display: block;
+    width: 3px;
+    background-color: var(--accent);
+    border-radius: 1px;
+    animation: eq 1s ease-in-out infinite alternate;
+}
+.equalizer span:nth-child(1) { height: 4px; animation-delay: 0s; }
+.equalizer span:nth-child(2) { height: 12px; animation-delay: -0.2s; }
+.equalizer span:nth-child(3) { height: 8px; animation-delay: -0.4s; }
+
+@keyframes eq {
+    0% { height: 4px; }
+    100% { height: 14px; }
+}
+
+/* Active && !Playing (Paused) */
+.track-item.active:not(.playing) .num-text {
+    display: block;
+    color: var(--accent);
+}
+.track-item.active:not(.playing):hover .num-text {
+    display: none;
+}
+.track-item.active:not(.playing):hover .num-play {
+    display: block;
+}
+
+/* Active && Playing */
+.track-item.active.playing .num-text {
+    display: none;
+}
+.track-item.active.playing .num-play {
+    display: none !important;
+}
+.track-item.active.playing .equalizer {
+    display: flex;
+}
+.track-item.active.playing:hover .equalizer {
+    display: none;
+}
+.track-item.active.playing:hover .num-pause {
+    display: block;
     color: var(--accent);
 }
 
@@ -694,4 +746,39 @@
     font-size: 13px;
     text-align: center;
     max-width: 320px;
+}
+
+/* ========== 自定义下拉菜单 (Element Plus 覆盖) ========== */
+.el-popper.warehouse-dropdown {
+    background: var(--surface-2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    padding: 4px 0 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.el-popper.warehouse-dropdown .el-dropdown-menu {
+    background: transparent !important;
+    border: none !important;
+}
+
+.warehouse-dropdown .el-dropdown-menu__item {
+    color: #ffffff !important;
+    font-family: var(--font) !important;
+    font-size: 13px !important;
+    padding: 8px 16px !important;
+    line-height: 1.5 !important;
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+.warehouse-dropdown .el-dropdown-menu__item.is-active,
+.warehouse-dropdown .el-dropdown-menu__item:hover,
+.warehouse-dropdown .el-dropdown-menu__item:focus {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--accent) !important;
+}
+
+.warehouse-dropdown .el-popper__arrow::before {
+    background: var(--surface-2) !important;
+    border: 1px solid var(--border) !important;
 }
