@@ -112,6 +112,7 @@
     -webkit-box-orient: vertical;
     cursor: pointer;
     transition: opacity 0.15s;
+    width: fit-content;
 }
 
 .hero-title:hover {
@@ -119,7 +120,7 @@
 }
 
 .hero-description {
-    font-size: 14px;
+    font-size: 20px;
     color: var(--text);
     line-height: 1.4;
     overflow: hidden;
@@ -129,6 +130,7 @@
     -webkit-box-orient: vertical;
     cursor: pointer;
     transition: opacity 0.15s;
+    width: fit-content;
 }
 
 .hero-description:hover {
@@ -194,7 +196,7 @@
         font-size: 28px;
     }
     .hero-description {
-        font-size: 13px;
+        font-size: 15px;
         -webkit-line-clamp: 1;
     }
 }
