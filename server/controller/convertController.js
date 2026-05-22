@@ -1,25 +1,16 @@
 const express = require('express')
 const fs = require('fs')
 const { dialog } = require('electron')
-const decryptService = require('../service/decryptService')
+const convertDao = require('../dao/convertDao')
+const convertService = require('../service/convertService')
 const ApiResult = require('../pojo/vo/ApiResult')
 
 module.exports = function(mainWindow) {
   const router = express.Router()
 
-  router.get('/formats', (req, res) => {
-    res.json(decryptService.getSupportedFormats())
-  })
-
   router.post('/scan', (req, res) => {
     const { filePaths } = req.body
-    res.json(decryptService.scanDecryptFiles(filePaths))
-  })
-
-  router.post('/file', async (req, res) => {
-    const { inputPath, outputPath, outputFormat } = req.body
-    const result = await decryptService.decryptFile(inputPath, outputPath, outputFormat || 'mp3')
-    res.json(result)
+    res.json(convertService.scanFlacFiles(filePaths))
   })
 
   router.post('/start', async (req, res) => {
@@ -28,15 +19,20 @@ module.exports = function(mainWindow) {
       return res.json(ApiResult.fail('缺少参数'))
     }
 
+    const ffmpegPath = convertDao.getFfmpegPath()
+    if (!ffmpegPath) {
+      return res.json(ApiResult.fail('未找到 ffmpeg，请确保已安装'))
+    }
+
     if (!fs.existsSync(outputPath)) {
       return res.json(ApiResult.fail('输出目录不存在'))
     }
 
-    res.json(ApiResult.ok(null, '解密开始'))
+    res.json(ApiResult.ok(null, '转换开始'))
 
-    await decryptService.startDecrypt(files, outputPath, (data) => {
+    await convertService.startConvert(files, outputPath, (data) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('decrypt-progress', data)
+        mainWindow.webContents.send('convert-progress', data)
       }
     })
   })
