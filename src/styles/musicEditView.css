@@ -264,14 +264,21 @@
 }
 
 .form-label {
-  width: 130px;
+  width: 100px;
+  max-width: 100px;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-dim, #b3b3b3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 
 .form-input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   background: none;
   border: none;
   color: #fff;
@@ -317,6 +324,7 @@
 
 .split-col .form-label {
   width: 100px;
+  max-width: 100px;
 }
 
 .loading-state {
