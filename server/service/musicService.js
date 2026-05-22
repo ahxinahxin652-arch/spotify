@@ -373,12 +373,28 @@ async function updateFileMetadata(filePath, data) {
         const db = getDb()
         const track = await db.track.findFirst({ where: { path: filePath } })
         if (track) {
+          // 重新从文件提取封面（确保与文件一致）
+          let newCover = track.cover || ''
+          try {
+            const { parseFile } = await import('music-metadata')
+            const meta = await parseFile(filePath)
+            if (meta.common.picture && meta.common.picture.length > 0) {
+              const pic = meta.common.picture[0]
+              const mime = normalizeMimeType(pic.format)
+              const buf = Buffer.isBuffer(pic.data) ? pic.data : Buffer.from(pic.data)
+              newCover = `data:${mime};base64,${buf.toString('base64')}`
+            } else {
+              newCover = ''
+            }
+          } catch (_) { /* 提取封面失败，保持原值 */ }
+
           await db.track.update({
             where: { id: track.id },
             data: {
               title: data.title || track.title,
               artist: data.artist || track.artist,
               album: data.album || track.album,
+              cover: newCover,
             }
           })
         }

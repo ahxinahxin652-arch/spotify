@@ -10,6 +10,7 @@ class Track {
    * @param {string} [params.title]      - 歌曲名称 (可从文件名解析)
    * @param {string} [params.artist]     - 歌手
    * @param {string} [params.album]      - 专辑名称
+   * @param {string} [params.cover]      - 封面缩略图 (base64 data URL)
    * @param {number} [params.duration]   - 歌曲时长（秒）
    * @param {string} params.path         - 本地物理绝对路径
    * @param {string} params.format       - 文件格式后缀 (flac, mp3, kgm, ncm 等)
@@ -23,7 +24,7 @@ class Track {
    */
   constructor({
     id, libraryId = '', name, title = '', artist = '', album = '',
-    duration = 0, path, format = '', size = 0, modified = 0,
+    cover = '', duration = 0, path, format = '', size = 0, modified = 0,
     isEncrypted = false, warehouse = '', warehouseId = '', createdAt, updatedAt,
   }) {
     this.id = id
@@ -32,6 +33,7 @@ class Track {
     this.title = title || name
     this.artist = artist
     this.album = album
+    this.cover = cover
     this.duration = duration
     this.path = path
     this.format = format

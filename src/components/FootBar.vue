@@ -301,7 +301,8 @@ onUnmounted(() => {
     <div class="foot-left">
       <div v-if="player.currentTrack" class="track-info">
         <div class="track-cover">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <img v-if="player.currentTrack.cover" :src="player.currentTrack.cover" class="track-cover-img" alt="" />
+          <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 18V5l12-2v13"/>
             <circle cx="6" cy="18" r="3"/>
             <circle cx="18" cy="16" r="3"/>

@@ -19,28 +19,43 @@ const ENCRYPTED_FORMATS = ['kgm', 'kgma', 'vpr', 'kgmm', 'qmc0', 'qmc3', 'qmcfla
 // ========== 元数据解析 ==========
 
 /**
- * 解析音频文件的元数据 (歌曲名、歌手、时长)
+ * 标准化图片 MIME 类型
+ */
+function normalizeMimeType(format) {
+    if (!format) return 'image/jpeg'
+    if (format.startsWith('image/')) return format
+    const map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', bmp: 'image/bmp', webp: 'image/webp' }
+    return map[format.toLowerCase()] || 'image/jpeg'
+}
+
+/**
+ * 解析音频文件的元数据 (歌曲名、歌手、时长、封面缩略图)
  * @param {string} filePath 音频文件的绝对路径
- * @returns {Promise<{ title: string, artist: string, duration: number }>}
+ * @returns {Promise<{ title: string, artist: string, duration: number, cover: string }>}
  */
 async function parseAudioMetadata(filePath) {
     try {
-        // 使用动态 import 兼容 CommonJS / ESM 环境
         const mm = await import('music-metadata');
-
-        // parseFile 会自动分析文件头并提取相关信息
         const metadata = await mm.parseFile(filePath);
+
+        let cover = ''
+        if (metadata.common.picture && metadata.common.picture.length > 0) {
+            const pic = metadata.common.picture[0]
+            const mime = normalizeMimeType(pic.format)
+            // pic.data 可能是 Uint8Array (music-metadata v11+)
+            const buf = Buffer.isBuffer(pic.data) ? pic.data : Buffer.from(pic.data)
+            cover = `data:${mime};base64,${buf.toString('base64')}`
+        }
 
         return {
             title: metadata.common.title || '',
             artist: metadata.common.artist || '',
-            // 时长单位为秒，使用 Math.round 进行取整，如果解析失败默认为 0
-            duration: metadata.format.duration ? Math.round(metadata.format.duration) : 0
+            duration: metadata.format.duration ? Math.round(metadata.format.duration) : 0,
+            cover,
         };
     } catch (error) {
         console.error(`[Metadata] 解析文件元数据失败 ${filePath}:`, error.message);
-        // 解析失败时返回空值，避免程序中断
-        return {title: '', artist: '', duration: 0};
+        return {title: '', artist: '', duration: 0, cover: ''};
     }
 }
 
@@ -361,6 +376,7 @@ async function resolveTrackById(trackId) {
                 title: track.title || track.name,
                 artist: track.artist || '',
                 album: track.album || '',
+                cover: track.cover || '',
                 duration: track.duration || 0,
                 path: track.path,
                 format: track.format,
@@ -412,6 +428,7 @@ async function getWarehouseTracksById(libraryId) {
                     title: track.title || track.name,
                     artist: track.artist || '',
                     album: track.album || '',
+                    cover: track.cover || '',
                     duration: track.duration || 0,
                     path: track.path,
                     format: track.format,
@@ -534,6 +551,7 @@ async function importFilesToWarehouseById(libraryId, filePaths) {
                     trackData.title = meta.title || nameMeta.title || trackData.title;
                     trackData.artist = meta.artist || nameMeta.artist || '';
                     trackData.duration = meta.duration || 0;
+                    trackData.cover = meta.cover || '';
                 }
 
                 // 存入 SQLite 数据库
@@ -623,6 +641,7 @@ async function syncWarehouseById(libraryId) {
                 trackData.title = meta.title || nameMeta.title || trackData.title
                 trackData.artist = meta.artist || nameMeta.artist || ''
                 trackData.duration = meta.duration || 0
+                trackData.cover = meta.cover || ''
             }
 
             await db.track.create({data: trackData})

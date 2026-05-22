@@ -1960,6 +1960,8 @@ export namespace Prisma {
     title: string | null
     artist: string | null
     album: string | null
+    cover: string | null
+    cover: string | null
     duration: number | null
     path: string | null
     format: string | null
@@ -1977,6 +1979,8 @@ export namespace Prisma {
     title: string | null
     artist: string | null
     album: string | null
+    cover: string | null
+    cover: string | null
     duration: number | null
     path: string | null
     format: string | null
@@ -1994,6 +1998,7 @@ export namespace Prisma {
     title: number
     artist: number
     album: number
+    cover: number
     duration: number
     path: number
     format: number
@@ -2025,6 +2030,8 @@ export namespace Prisma {
     title?: true
     artist?: true
     album?: true
+    cover?: true
+    cover?: true
     duration?: true
     path?: true
     format?: true
@@ -2042,6 +2049,8 @@ export namespace Prisma {
     title?: true
     artist?: true
     album?: true
+    cover?: true
+    cover?: true
     duration?: true
     path?: true
     format?: true
@@ -2059,6 +2068,8 @@ export namespace Prisma {
     title?: true
     artist?: true
     album?: true
+    cover?: true
+    cover?: true
     duration?: true
     path?: true
     format?: true
@@ -2163,6 +2174,8 @@ export namespace Prisma {
     title: string | null
     artist: string | null
     album: string | null
+    cover: string | null
+    cover: string | null
     duration: number | null
     path: string
     format: string
@@ -2199,6 +2212,8 @@ export namespace Prisma {
     title?: boolean
     artist?: boolean
     album?: boolean
+    cover?: boolean
+    cover?: boolean
     duration?: boolean
     path?: boolean
     format?: boolean
@@ -2217,6 +2232,8 @@ export namespace Prisma {
     title?: boolean
     artist?: boolean
     album?: boolean
+    cover?: boolean
+    cover?: boolean
     duration?: boolean
     path?: boolean
     format?: boolean
@@ -2235,6 +2252,8 @@ export namespace Prisma {
     title?: boolean
     artist?: boolean
     album?: boolean
+    cover?: boolean
+    cover?: boolean
     duration?: boolean
     path?: boolean
     format?: boolean
@@ -2264,6 +2283,8 @@ export namespace Prisma {
       title: string | null
       artist: string | null
       album: string | null
+    cover: string | null
+      cover: string | null
       duration: number | null
       path: string
       format: string
@@ -2671,7 +2692,9 @@ export namespace Prisma {
     readonly name: FieldRef<"Track", 'String'>
     readonly title: FieldRef<"Track", 'String'>
     readonly artist: FieldRef<"Track", 'String'>
-    readonly album: FieldRef<"Track", 'String'>
+    readonly album: FieldRef<"Track", \'String\'>
+    readonly cover: FieldRef<"Track", \'String\'>
+    readonly cover: FieldRef<"Track", 'String'>
     readonly duration: FieldRef<"Track", 'Float'>
     readonly path: FieldRef<"Track", 'String'>
     readonly format: FieldRef<"Track", 'String'>
@@ -3041,6 +3064,7 @@ export namespace Prisma {
     title: 'title',
     artist: 'artist',
     album: 'album',
+    cover: 'cover',
     duration: 'duration',
     path: 'path',
     format: 'format',
@@ -3188,6 +3212,8 @@ export namespace Prisma {
     title?: StringNullableFilter<"Track"> | string | null
     artist?: StringNullableFilter<"Track"> | string | null
     album?: StringNullableFilter<"Track"> | string | null
+    cover?: StringNullableFilter<"Track"> | string | null
+    cover?: StringNullableFilter<"Track"> | string | null
     duration?: FloatNullableFilter<"Track"> | number | null
     path?: StringFilter<"Track"> | string
     format?: StringFilter<"Track"> | string
@@ -3205,7 +3231,9 @@ export namespace Prisma {
     name?: SortOrder
     title?: SortOrderInput | SortOrder
     artist?: SortOrderInput | SortOrder
-    album?: SortOrderInput | SortOrder
+    album?: SortOrder
+    cover?: SortOrderInput | SortOrder
+    cover?: SortOrderInput | SortOrder
     duration?: SortOrderInput | SortOrder
     path?: SortOrder
     format?: SortOrder
@@ -3228,6 +3256,8 @@ export namespace Prisma {
     title?: StringNullableFilter<"Track"> | string | null
     artist?: StringNullableFilter<"Track"> | string | null
     album?: StringNullableFilter<"Track"> | string | null
+    cover?: StringNullableFilter<"Track"> | string | null
+    cover?: StringNullableFilter<"Track"> | string | null
     duration?: FloatNullableFilter<"Track"> | number | null
     format?: StringFilter<"Track"> | string
     size?: IntFilter<"Track"> | number
@@ -3244,7 +3274,9 @@ export namespace Prisma {
     name?: SortOrder
     title?: SortOrderInput | SortOrder
     artist?: SortOrderInput | SortOrder
-    album?: SortOrderInput | SortOrder
+    album?: SortOrder
+    cover?: SortOrderInput | SortOrder
+    cover?: SortOrderInput | SortOrder
     duration?: SortOrderInput | SortOrder
     path?: SortOrder
     format?: SortOrder
@@ -3270,6 +3302,7 @@ export namespace Prisma {
     title?: StringNullableWithAggregatesFilter<"Track"> | string | null
     artist?: StringNullableWithAggregatesFilter<"Track"> | string | null
     album?: StringNullableWithAggregatesFilter<"Track"> | string | null
+    cover?: StringNullableWithAggregatesFilter<"Track"> | string | null
     duration?: FloatNullableWithAggregatesFilter<"Track"> | number | null
     path?: StringWithAggregatesFilter<"Track"> | string
     format?: StringWithAggregatesFilter<"Track"> | string
@@ -3360,6 +3393,8 @@ export namespace Prisma {
     title?: string | null
     artist?: string | null
     album?: string | null
+    cover?: string | null
+    cover?: string | null
     duration?: number | null
     path: string
     format: string
@@ -3378,6 +3413,8 @@ export namespace Prisma {
     title?: string | null
     artist?: string | null
     album?: string | null
+    cover?: string | null
+    cover?: string | null
     duration?: number | null
     path: string
     format: string
@@ -3394,6 +3431,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string
@@ -3412,6 +3451,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string
@@ -3429,6 +3470,8 @@ export namespace Prisma {
     title?: string | null
     artist?: string | null
     album?: string | null
+    cover?: string | null
+    cover?: string | null
     duration?: number | null
     path: string
     format: string
@@ -3445,6 +3488,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string
@@ -3462,6 +3507,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string
@@ -3668,6 +3715,8 @@ export namespace Prisma {
     title?: SortOrder
     artist?: SortOrder
     album?: SortOrder
+    cover?: SortOrder
+    cover?: SortOrder
     duration?: SortOrder
     path?: SortOrder
     format?: SortOrder
@@ -3691,6 +3740,8 @@ export namespace Prisma {
     title?: SortOrder
     artist?: SortOrder
     album?: SortOrder
+    cover?: SortOrder
+    cover?: SortOrder
     duration?: SortOrder
     path?: SortOrder
     format?: SortOrder
@@ -3708,6 +3759,8 @@ export namespace Prisma {
     title?: SortOrder
     artist?: SortOrder
     album?: SortOrder
+    cover?: SortOrder
+    cover?: SortOrder
     duration?: SortOrder
     path?: SortOrder
     format?: SortOrder
@@ -4063,6 +4116,8 @@ export namespace Prisma {
     title?: string | null
     artist?: string | null
     album?: string | null
+    cover?: string | null
+    cover?: string | null
     duration?: number | null
     path: string
     format: string
@@ -4079,6 +4134,8 @@ export namespace Prisma {
     title?: string | null
     artist?: string | null
     album?: string | null
+    cover?: string | null
+    cover?: string | null
     duration?: number | null
     path: string
     format: string
@@ -4124,6 +4181,8 @@ export namespace Prisma {
     title?: StringNullableFilter<"Track"> | string | null
     artist?: StringNullableFilter<"Track"> | string | null
     album?: StringNullableFilter<"Track"> | string | null
+    cover?: StringNullableFilter<"Track"> | string | null
+    cover?: StringNullableFilter<"Track"> | string | null
     duration?: FloatNullableFilter<"Track"> | number | null
     path?: StringFilter<"Track"> | string
     format?: StringFilter<"Track"> | string
@@ -4196,6 +4255,8 @@ export namespace Prisma {
     title?: string | null
     artist?: string | null
     album?: string | null
+    cover?: string | null
+    cover?: string | null
     duration?: number | null
     path: string
     format: string
@@ -4212,6 +4273,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string
@@ -4228,6 +4291,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string
@@ -4244,6 +4309,8 @@ export namespace Prisma {
     title?: NullableStringFieldUpdateOperationsInput | string | null
     artist?: NullableStringFieldUpdateOperationsInput | string | null
     album?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
+    cover?: NullableStringFieldUpdateOperationsInput | string | null
     duration?: NullableFloatFieldUpdateOperationsInput | number | null
     path?: StringFieldUpdateOperationsInput | string
     format?: StringFieldUpdateOperationsInput | string

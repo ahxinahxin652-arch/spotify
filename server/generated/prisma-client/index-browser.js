@@ -136,6 +136,7 @@ exports.Prisma.TrackScalarFieldEnum = {
   title: 'title',
   artist: 'artist',
   album: 'album',
+  cover: 'cover',
   duration: 'duration',
   path: 'path',
   format: 'format',

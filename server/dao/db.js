@@ -86,6 +86,7 @@ async function autoMigrate() {
       "title" TEXT,
       "artist" TEXT,
       "album" TEXT,
+      "cover" TEXT,
       "duration" REAL,
       "path" TEXT NOT NULL,
       "format" TEXT NOT NULL,
@@ -97,6 +98,13 @@ async function autoMigrate() {
       CONSTRAINT "tracks_libraryId_fkey" FOREIGN KEY ("libraryId") REFERENCES "music_libraries" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     )
   `)
+
+  // 尝试添加新字段 cover (处理旧版本数据库)
+  try {
+    await db.$executeRawUnsafe(`ALTER TABLE "tracks" ADD COLUMN "cover" TEXT`)
+  } catch (e) {
+    // 列已经存在时会报错，忽略此错误
+  }
 
   await db.$executeRawUnsafe(`
     CREATE UNIQUE INDEX IF NOT EXISTS "tracks_path_key" ON "tracks"("path")

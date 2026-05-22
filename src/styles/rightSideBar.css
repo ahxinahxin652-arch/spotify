@@ -79,6 +79,13 @@
     opacity: 0.6;
 }
 
+.album-art-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 /* 曲目详情 */
 .track-detail-info {
     display: flex;
