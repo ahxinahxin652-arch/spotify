@@ -172,15 +172,6 @@ function handleChangeFile() {
 
 <template>
   <div class="edit-view">
-    <!-- 顶部返回 -->
-    <div class="hero-top-bar" style="padding: 20px 30px;">
-      <button class="btn btn-back" @click="router.push('/')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-      </button>
-    </div>
-
     <!-- 未加载文件时显示上传区域 -->
     <div v-if="!isLoaded" class="upload-container">
       <div v-if="isLoading" class="loading-state">
@@ -199,9 +190,11 @@ function handleChangeFile() {
 
     <!-- 加载后的编辑区域 -->
     <div v-else class="edit-container">
-      <!-- 左侧区域 -->
-      <div class="edit-left">
-        <!-- 封面区域 -->
+      <!-- 左侧区域：封面 & 控制 -->
+      <div class="panel edit-left">
+        <div class="panel-header">
+          <h2>Album Cover</h2>
+        </div>
         <div class="cover-edit-area">
           <input
             ref="coverInputRef"
@@ -230,72 +223,75 @@ function handleChangeFile() {
               <span>更换封面</span>
             </div>
           </div>
-          <button class="btn-primary-large" @click="saveMetadata" :disabled="isSaving" style="margin-top: 24px;">
-            {{ isSaving ? '保存中...' : '保存' }}
-          </button>
-        </div>
-
-        <!-- 底部按钮 -->
-        <div class="left-actions">
-          <button class="btn-dark" @click="handleChangeFile" style="width: 100%;">
-            Change file
-          </button>
+          <div class="action-buttons">
+            <button class="btn-primary-large" @click="saveMetadata" :disabled="isSaving">
+              {{ isSaving ? 'Saving...' : 'Save File' }}
+            </button>
+            <button class="btn-dark" @click="handleChangeFile">
+              Change File
+            </button>
+          </div>
         </div>
       </div>
 
       <!-- 右侧表单区域 -->
-      <div class="edit-right">
-        <div class="form-grid">
-          <div class="form-row">
-            <label class="form-label">Title</label>
-            <input v-model="metaForm.title" class="form-input" placeholder="Title" />
-          </div>
-          <div class="form-row">
-            <label class="form-label">Artist</label>
-            <input v-model="metaForm.artist" class="form-input" placeholder="Artist" />
-          </div>
-          <div class="form-row">
-            <label class="form-label">Album</label>
-            <input v-model="metaForm.album" class="form-input" placeholder="Album" />
-          </div>
-          <div class="form-row">
-            <label class="form-label">Album Artist</label>
-            <input v-model="metaForm.albumArtist" class="form-input" placeholder="Album artist" />
-          </div>
-          <div class="form-row">
-            <label class="form-label">Genre</label>
-            <input v-model="metaForm.genre" class="form-input" placeholder="Genre" />
-          </div>
-          <div class="form-row">
-            <label class="form-label">Year</label>
-            <input v-model="metaForm.year" class="form-input" placeholder="YYYY or YYYY-MM-DD" />
-          </div>
-          
-          <div class="form-row split-row">
-            <div class="split-col">
-              <label class="form-label">Track Number</label>
-              <input v-model="metaForm.trackNumber" type="number" class="form-input" placeholder="1" />
+      <div class="panel edit-right">
+        <div class="panel-header">
+          <h2>Metadata Editor</h2>
+        </div>
+        <div class="form-container">
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="form-label">Title</label>
+              <input v-model="metaForm.title" class="form-input" placeholder="Title" />
             </div>
-            <div class="split-col">
-              <label class="form-label">Total Tracks</label>
-              <input v-model="metaForm.totalTracks" type="number" class="form-input" placeholder="12" />
+            <div class="form-row">
+              <label class="form-label">Artist</label>
+              <input v-model="metaForm.artist" class="form-input" placeholder="Artist" />
             </div>
-          </div>
-          
-          <div class="form-row split-row">
-            <div class="split-col">
-              <label class="form-label">Disc Number</label>
-              <input v-model="metaForm.discNumber" type="number" class="form-input" placeholder="1" />
+            <div class="form-row">
+              <label class="form-label">Album</label>
+              <input v-model="metaForm.album" class="form-input" placeholder="Album" />
             </div>
-            <div class="split-col">
-              <label class="form-label">Total Discs</label>
-              <input v-model="metaForm.totalDiscs" type="number" class="form-input" placeholder="1" />
+            <div class="form-row">
+              <label class="form-label">Album Artist</label>
+              <input v-model="metaForm.albumArtist" class="form-input" placeholder="Album artist" />
             </div>
-          </div>
-          
-          <div class="form-row">
-            <label class="form-label">Comment</label>
-            <input v-model="metaForm.comment" class="form-input" placeholder="Notes or comments" />
+            <div class="form-row">
+              <label class="form-label">Genre</label>
+              <input v-model="metaForm.genre" class="form-input" placeholder="Genre" />
+            </div>
+            <div class="form-row">
+              <label class="form-label">Year</label>
+              <input v-model="metaForm.year" class="form-input" placeholder="YYYY or YYYY-MM-DD" />
+            </div>
+            
+            <div class="form-row split-row">
+              <div class="split-col">
+                <label class="form-label">Track Number</label>
+                <input v-model="metaForm.trackNumber" type="number" class="form-input" placeholder="1" />
+              </div>
+              <div class="split-col">
+                <label class="form-label">Total Tracks</label>
+                <input v-model="metaForm.totalTracks" type="number" class="form-input" placeholder="12" />
+              </div>
+            </div>
+            
+            <div class="form-row split-row">
+              <div class="split-col">
+                <label class="form-label">Disc Number</label>
+                <input v-model="metaForm.discNumber" type="number" class="form-input" placeholder="1" />
+              </div>
+              <div class="split-col">
+                <label class="form-label">Total Discs</label>
+                <input v-model="metaForm.totalDiscs" type="number" class="form-input" placeholder="1" />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <label class="form-label">Comment</label>
+              <input v-model="metaForm.comment" class="form-input" placeholder="Notes or comments" />
+            </div>
           </div>
         </div>
       </div>
