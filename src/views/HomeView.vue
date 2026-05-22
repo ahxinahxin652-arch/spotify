@@ -191,7 +191,7 @@ async function handleSaveEdit() {
     return
   }
 
-  const result = await library.updateWarehouse(editingWarehouse.value.name, updates)
+  const result = await library.updateWarehouse(editingWarehouse.value.id, updates)
   editLoading.value = false
 
   if (result.success) {
@@ -206,29 +206,26 @@ async function handleSaveEdit() {
 // ---- 删除 ----
 async function handleDeleteWarehouse(warehouse) {
   if (confirm(`确定要删除音乐库 "${warehouse.name}" 吗？对应文件会被删除。`)) {
-    await library.deleteWarehouse(warehouse.name)
+    await library.deleteWarehouse(warehouse.id)
   }
 }
-
+  
 function enterWarehouse(warehouse) {
   library.setCurrentWarehouse(warehouse)
-  router.push(`/warehouse/${encodeURIComponent(warehouse.name)}`)
+  router.push(`/warehouse/${warehouse.id}`)
 }
 
 function handleDrop(e) {
   e.preventDefault()
   const warehouseId = e.currentTarget.dataset.warehouseId
-  const warehouseName = e.currentTarget.dataset.warehouse
-  if (!warehouseName && !warehouseId) return
+  if (!warehouseId) return
   const files = Array.from(e.dataTransfer.files)
-  handleImportFiles(warehouseId || warehouseName, files, !!warehouseId)
+  handleImportFiles(warehouseId, files)
 }
 
-async function handleImportFiles(warehouseKey, files, isId = false) {
+async function handleImportFiles(warehouseId, files) {
   const filePaths = files.map(f => f.path)
-  const result = isId
-    ? await window.electronAPI.importFilesToWarehouseById(warehouseKey, filePaths)
-    : await window.electronAPI.importFilesToWarehouse(warehouseKey, filePaths)
+  const result = await window.electronAPI.importFilesToWarehouseById(warehouseId, filePaths)
   if (result.success) {
     library.loadWarehouses()
   }
@@ -283,7 +280,6 @@ async function handleImportFiles(warehouseKey, files, isId = false) {
             @drop="handleDrop"
             @dragover.prevent
             @dragenter.prevent
-            :data-warehouse="wh.name"
             :data-warehouse-id="wh.id"
           >
             <div class="warehouse-cover" :style="wh.coverPath ? { background: 'none' } : {}">

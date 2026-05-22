@@ -67,12 +67,26 @@ function handlePlayTrackEvent(e) {
   playTrack(track, playlist, index)
 }
 
+// ========== 监听曲目删除事件 ==========
+function handleTrackDeletedEvent(e) {
+  const { trackId } = e.detail
+  const result = player.removeTrack(trackId)
+  if (result.action === 'stop') {
+    stopCurrent()
+    player.reset()
+  } else if (result.action === 'play') {
+    playTrack(result.track, player.currentPlaylist, result.index)
+  }
+}
+
 onMounted(() => {
   window.addEventListener('play-track', handlePlayTrackEvent)
+  window.addEventListener('track-deleted', handleTrackDeletedEvent)
 })
 
 onUnmounted(() => {
   window.removeEventListener('play-track', handlePlayTrackEvent)
+  window.removeEventListener('track-deleted', handleTrackDeletedEvent)
   window.removeEventListener('resize', refreshOverflow)
   stopCurrent()
 })
@@ -109,11 +123,9 @@ async function playTrack(track, playlist = [], index = -1) {
     }
   }
 
-  // 更新音乐库的最近播放时间（优先使用稳定的 warehouseId，避免改名后失效）
+  // 更新音乐库的最近播放时间（使用稳定的 warehouseId）
   if (currentTrack.warehouseId) {
     window.electronAPI.updateRecentPlayedById(currentTrack.warehouseId).catch(() => {})
-  } else if (currentTrack.warehouse) {
-    window.electronAPI.updateRecentPlayed(currentTrack.warehouse).catch(() => {})
   }
 
   // 通过 Electron IPC 读取文件为 Blob，绕过 file:// 限制

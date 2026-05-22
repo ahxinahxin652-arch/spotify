@@ -10,9 +10,8 @@ const route = useRoute()
 const player = usePlayerStore()
 const library = useMusicLibraryStore()
 
-const warehouseName = computed(() => decodeURIComponent(route.params.name))
+const libraryId = computed(() => route.params.id)  // 直接从路由获取稳定 UUID
 const warehouseInfo = ref({ name: '', description: '', coverPath: '' })
-const libraryId = ref('')  // 音乐库的稳定 UUID，用于所有 ID-based 操作
 const tracks = ref([])
 const isLoading = ref(false)
 const searchQuery = ref('')
@@ -63,18 +62,14 @@ onMounted(async () => {
 async function loadTracks() {
   isLoading.value = true
   try {
-    // 优先使用 libraryId 加载（改名后仍能正确定位），否则从路由参数用名称加载
-    let result
-    if (libraryId.value) {
-      result = await window.electronAPI.getWarehouseTracksById(libraryId.value)
-    } else {
-      result = await window.electronAPI.getWarehouseTracks(warehouseName.value)
+    if (!libraryId.value) {
+      console.error('无法找到音乐库: libraryId 为空')
+      return
     }
+
+    const result = await window.electronAPI.getWarehouseTracksById(libraryId.value)
     if (result.success && result.data) {
       tracks.value = result.data.tracks
-      if (result.data.libraryId) {
-        libraryId.value = result.data.libraryId
-      }
       if (result.data.warehouse) {
         warehouseInfo.value = result.data.warehouse
       }
@@ -169,11 +164,9 @@ async function handleFileDrop(e) {
   e.preventDefault()
   const files = Array.from(e.dataTransfer.files)
   const filePaths = files.map(f => f.path)
-  // 优先使用 libraryId
-  const api = libraryId.value
-    ? window.electronAPI.importFilesToWarehouseById(libraryId.value, filePaths)
-    : window.electronAPI.importFilesToWarehouse(warehouseName.value, filePaths)
-  const result = await api
+  if (!libraryId.value) return
+  const result = await window.electronAPI.importFilesToWarehouseById(libraryId.value, filePaths)
+  // 导入成功后仍需重载（因为服务端会解析元数据生成新 track 记录）
   if (result.success) {
     await loadTracks()
   }
@@ -181,12 +174,8 @@ async function handleFileDrop(e) {
 
 async function handleAddFiles() {
   const filePaths = await window.electronAPI.selectMusicFiles()
-  if (filePaths && filePaths.length > 0) {
-    // 优先使用 libraryId
-    const api = libraryId.value
-      ? window.electronAPI.importFilesToWarehouseById(libraryId.value, filePaths)
-      : window.electronAPI.importFilesToWarehouse(warehouseName.value, filePaths)
-    const result = await api
+  if (filePaths && filePaths.length > 0 && libraryId.value) {
+    const result = await window.electronAPI.importFilesToWarehouseById(libraryId.value, filePaths)
     if (result.success) {
       await loadTracks()
     }
@@ -289,7 +278,7 @@ async function handleSaveEdit() {
   }
   editLoading.value = true
 
-  const currentName = warehouseInfo.value.name || warehouseName.value
+  const currentName = warehouseInfo.value.name
   const updates = {}
   if (newName !== currentName) updates.name = newName
   if ((editDescription.value.trim() || '') !== (warehouseInfo.value.description || '')) {
@@ -305,19 +294,27 @@ async function handleSaveEdit() {
     return
   }
 
-  const result = await library.updateWarehouse(currentName, updates)
+  const result = await library.updateWarehouse(libraryId.value, updates)
   editLoading.value = false
 
   if (result.success) {
     showEditDialog.value = false
     ElMessage.success('保存成功')
-    // 如果改名，需要跳转到新路由
-    if (updates.name) {
-      router.replace(`/warehouse/${encodeURIComponent(updates.name)}`)
+    // 直接更新本地 warehouseInfo，不重载 tracks
+    if (result.warehouse) {
+      warehouseInfo.value = {
+        name: result.warehouse.name || warehouseInfo.value.name,
+        description: result.warehouse.description ?? warehouseInfo.value.description,
+        coverPath: result.warehouse.coverPath ?? warehouseInfo.value.coverPath,
+      }
+    } else {
+      // 兜底：用本地编辑值更新
+      if (updates.name) warehouseInfo.value.name = updates.name
+      if (updates.description !== undefined) warehouseInfo.value.description = updates.description
+      if (updates.coverPath !== undefined) warehouseInfo.value.coverPath = updates.coverPath
     }
-    // 重新加载数据
-    await loadTracks()
-    await library.loadWarehouses()
+    // 刷新首页列表
+    library.loadWarehouses()
   } else {
     ElMessage.error(result.error || '保存失败')
   }
@@ -340,7 +337,12 @@ function handleTrackAction(cmd, track) {
       const result = await window.electronAPI.deleteTrack(track.id)
       if (result.success) {
         ElMessage.success('删除成功')
-        await loadTracks()
+        // 直接从界面移除，不重载
+        tracks.value = tracks.value.filter(t => t.id !== track.id)
+        // 通知 FootBar 处理播放状态
+        window.dispatchEvent(new CustomEvent('track-deleted', {
+          detail: { trackId: track.id },
+        }))
       } else {
         ElMessage.error(result.error || '删除失败')
       }
@@ -364,7 +366,11 @@ async function handleSaveTrackEdit() {
   if (result.success) {
     showEditTrackDialog.value = false
     ElMessage.success('保存成功')
-    await loadTracks()
+    // 直接更新内存中的 track 数据，不重载
+    const idx = tracks.value.findIndex(t => t.id === editingTrack.value.id)
+    if (idx !== -1) {
+      tracks.value[idx] = { ...tracks.value[idx], title, artist: editTrackArtist.value.trim(), album: editTrackAlbum.value.trim() }
+    }
   } else {
     ElMessage.error(result.error || '保存失败')
   }
@@ -399,7 +405,7 @@ async function handleSaveTrackEdit() {
           </div>
         </div>
         <div class="hero-info">
-          <h1 class="hero-title" @click="openEditDialog" title="点击编辑">{{ warehouseInfo.name || warehouseName }}</h1>
+          <h1 class="hero-title" @click="openEditDialog" title="点击编辑">{{ warehouseInfo.name }}</h1>
           <p
             v-if="warehouseInfo.description"
             class="hero-description"

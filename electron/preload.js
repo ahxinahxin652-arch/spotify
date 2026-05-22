@@ -27,42 +27,14 @@ function createMusicWarehouse(name) {
   return apiFetch('/api/music/warehouses', { method: 'POST', body: { name } })
 }
 
-/** @returns {Promise<{ success: boolean, data?: null, error?: string }>} */
-function deleteMusicWarehouse(name) {
-  return apiFetch(`/api/music/warehouses/${encodeURIComponent(name)}`, { method: 'DELETE' })
-}
-
-/** @returns {Promise<{ success: boolean, data?: { warehouse: Object }, error?: string }>} */
-function updateMusicWarehouse(oldName, updates) {
-  return apiFetch(`/api/music/warehouses/${encodeURIComponent(oldName)}`, { method: 'PUT', body: updates })
-}
-
-/** @returns {Promise<{ success: boolean }>} */
-function updateRecentPlayed(warehouseName) {
-  return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/recent-played`, { method: 'POST', body: {} })
-}
-
 /** @returns {Promise<{ success: boolean }>} */
 function updateRecentPlayedById(libraryId) {
   return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/recent-played`, { method: 'POST', body: {} })
 }
 
-/** @returns {Promise<{ success: boolean, data?: { warehouseName: string, tracks: Array, warehouse: { name: string, description: string, coverPath: string } }, error?: string }>} */
-function getWarehouseTracks(warehouseName) {
-  return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/tracks`)
-}
-
 /** 通过 library ID 获取曲目列表 */
 function getWarehouseTracksById(libraryId) {
   return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/tracks`)
-}
-
-/** @returns {Promise<{ success: boolean, data?: { imported: number, skipped: number }, error?: string }>} */
-function importFilesToWarehouse(warehouseName, filePaths) {
-  return apiFetch(`/api/music/warehouses/${encodeURIComponent(warehouseName)}/import`, {
-    method: 'POST',
-    body: { filePaths },
-  })
 }
 
 /** 通过 library ID 导入文件 */
@@ -76,6 +48,11 @@ function importFilesToWarehouseById(libraryId, filePaths) {
 /** 通过 library ID 同步音乐库 */
 function syncWarehouseById(libraryId) {
   return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}/sync`, { method: 'POST', body: {} })
+}
+
+/** 通过 library ID 更新音乐库信息 */
+function updateMusicWarehouseById(libraryId, updates) {
+  return apiFetch(`/api/music/libraries/${encodeURIComponent(libraryId)}`, { method: 'PUT', body: updates })
 }
 
 /** 通过 library ID 删除音乐库 */
@@ -96,12 +73,6 @@ function updateTrack(trackId, data) {
 /** 删除曲目 */
 function deleteTrack(trackId) {
   return apiFetch(`/api/music/tracks/${encodeURIComponent(trackId)}`, { method: 'DELETE' })
-}
-
-/** @returns {Promise<string|null>} */
-async function getMusicWarehouseDir() {
-  const r = await apiFetch('/api/music/warehouse-dir')
-  return r.success && r.data ? r.data.path : null
 }
 
 // ========== 格式转换 API ==========
@@ -217,20 +188,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 音乐仓库
   getMusicWarehouses,
   createMusicWarehouse,
-  updateMusicWarehouse,
-  deleteMusicWarehouse,
+  updateMusicWarehouseById,
   deleteMusicWarehouseById,
-  updateRecentPlayed,
   updateRecentPlayedById,
-  getWarehouseTracks,
   getWarehouseTracksById,
-  importFilesToWarehouse,
   importFilesToWarehouseById,
   syncWarehouseById,
   resolveTrackById,
   updateTrack,
   deleteTrack,
-  getMusicWarehouseDir,
   // 格式转换
   scanFiles,
   startConvert,

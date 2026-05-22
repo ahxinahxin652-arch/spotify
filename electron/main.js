@@ -170,31 +170,7 @@ function startExpressServer() {
     res.json(await musicService.createMusicWarehouse(name))
   })
 
-  expressApp.put('/api/music/warehouses/:name', async (req, res) => {
-    const { name } = req.params
-    const updates = req.body
-    res.json(await musicService.updateMusicWarehouse(decodeURIComponent(name), updates))
-  })
 
-  expressApp.delete('/api/music/warehouses/:name', async (req, res) => {
-    const { name } = req.params
-    res.json(await musicService.deleteMusicWarehouse(decodeURIComponent(name)))
-  })
-
-  expressApp.get('/api/music/warehouses/:name/tracks', async (req, res) => {
-    const { name } = req.params
-    res.json(await musicService.getWarehouseTracks(decodeURIComponent(name)))
-  })
-
-  expressApp.post('/api/music/warehouses/:name/import', async (req, res) => {
-    const { name } = req.params
-    const { filePaths } = req.body
-    res.json(await musicService.importFilesToWarehouse(decodeURIComponent(name), filePaths))
-  })
-
-  expressApp.get('/api/music/warehouse-dir', (req, res) => {
-    res.json(ApiResult.ok({ path: musicService.getMusicWarehouseDir() }))
-  })
 
   // 校验曲目是否可播放（播放前调用，文件不存在则自动清理数据库）
   expressApp.post('/api/music/validate-track', async (req, res) => {
@@ -202,17 +178,7 @@ function startExpressServer() {
     res.json(await musicService.validateTrackPlayable(trackId, filePath))
   })
 
-  // 同步音乐库（文件系统 <-> 数据库一致性）
-  expressApp.post('/api/music/warehouses/:name/sync', async (req, res) => {
-    const { name } = req.params
-    res.json(await musicService.syncWarehouse(decodeURIComponent(name)))
-  })
 
-  // 更新最近播放时间（播放歌曲时调用）
-  expressApp.post('/api/music/warehouses/:name/recent-played', async (req, res) => {
-    const { name } = req.params
-    res.json(await musicService.updateRecentPlayed(decodeURIComponent(name)))
-  })
 
   // 通过 ID 更新最近播放时间（名称变更安全）
   expressApp.post('/api/music/libraries/:id/recent-played', async (req, res) => {
@@ -257,6 +223,12 @@ function startExpressServer() {
   expressApp.post('/api/music/libraries/:id/sync', async (req, res) => {
     const { id } = req.params
     res.json(await musicService.syncWarehouseById(decodeURIComponent(id)))
+  })
+
+  // 通过 library ID 更新音乐库信息
+  expressApp.put('/api/music/libraries/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.updateMusicWarehouseById(decodeURIComponent(id), req.body))
   })
 
   // 通过 library ID 删除音乐库

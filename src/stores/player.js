@@ -231,6 +231,88 @@ export const usePlayerStore = defineStore('player', () => {
     return null
   }
 
+  /**
+   * 从播放列表中移除指定 track（用于删除曲目后同步播放状态）
+   * @param {string} trackId - 被删除的 track ID
+   * @returns {{ action: 'stop'|'play'|'noop', track?: Object, index?: number }}
+   *   - 'noop':  被删 track 不在当前播放列表，无需操作
+   *   - 'stop':  需要停止播放并清除状态
+   *   - 'play':  需要播放返回的 track
+   */
+  function removeTrack(trackId) {
+    const list = currentPlaylist.value
+    const deletedIndex = list.findIndex(t => t.id === trackId)
+
+    // 不在当前播放列表
+    if (deletedIndex === -1) {
+      return { action: 'noop' }
+    }
+
+    const isCurrentlyPlaying = deletedIndex === currentIndex.value &&
+      currentTrack.value?.id === trackId
+
+    // 从 playlist 中移除
+    list.splice(deletedIndex, 1)
+
+    // 清理随机历史中对该索引的引用
+    if (shuffle.value) {
+      shuffleHistory.value = shuffleHistory.value
+        .map(idx => idx > deletedIndex ? idx - 1 : idx)
+        .filter(idx => idx !== deletedIndex && idx >= 0 && idx < list.length)
+      shuffleHistoryIndex.value = Math.min(
+        shuffleHistoryIndex.value,
+        shuffleHistory.value.length - 1
+      )
+    }
+
+    if (!isCurrentlyPlaying) {
+      // 被删 track 不在播放：只需修正 currentIndex
+      if (deletedIndex < currentIndex.value) {
+        currentIndex.value--
+      }
+      return { action: 'noop' }
+    }
+
+    // === 以下处理：被删 track 正在播放 ===
+
+    // 播放列表为空
+    if (list.length === 0) {
+      return { action: 'stop' }
+    }
+
+    // 随机模式：播放随机下一首
+    if (shuffle.value) {
+      const nextIdx = getRandomIndex()
+      currentIndex.value = nextIdx
+      shuffleHistory.value.push(nextIdx)
+      shuffleHistoryIndex.value = shuffleHistory.value.length - 1
+      return { action: 'play', track: list[nextIdx], index: nextIdx }
+    }
+
+    // 循环单曲：切换到下一首（不再循环已删除的曲目）
+    if (repeatMode.value === RepeatMode.TRACK) {
+      // 删除后 currentIndex 可能越界
+      const nextIdx = currentIndex.value >= list.length ? 0 : currentIndex.value
+      currentIndex.value = nextIdx
+      return { action: 'play', track: list[nextIdx], index: nextIdx }
+    }
+
+    // 顺序播放 / 循环列表
+    if (currentIndex.value >= list.length) {
+      // 被删的是最后一首
+      if (repeatMode.value === RepeatMode.LIST) {
+        // 循环列表：回到第一首
+        currentIndex.value = 0
+        return { action: 'play', track: list[0], index: 0 }
+      }
+      // 不循环：停止
+      return { action: 'stop' }
+    }
+
+    // 删除后 currentIndex 位置自动对应下一首
+    return { action: 'play', track: list[currentIndex.value], index: currentIndex.value }
+  }
+
   function reset() {
     currentTrack.value = null
     currentPlaylist.value = []
@@ -273,6 +355,7 @@ export const usePlayerStore = defineStore('player', () => {
     toggleRepeatMode,
     playNext,
     playPrev,
+    removeTrack,
     reset,
   }
 })

@@ -204,317 +204,6 @@ async function createWarehouse(name) {
 }
 
 /**
- * 删除音乐库
- * 先删除文件夹，再从 SQLite 删除记录（含关联 Track）
- * @param {string} name
- * @returns {Promise<{ success: boolean, error?: string }>}
- */
-async function deleteWarehouse(name) {
-    const db = getDb()
-    const root = getMusicWarehouseRoot()
-    const warehousePath = path.join(root, name)
-
-    try {
-        // 查找数据库记录
-        const library = await db.musicLibrary.findUnique({
-            where: {name},
-        })
-
-        if (!library) {
-            // 数据库中没有记录，但尝试清理可能残留的文件夹
-            if (fs.existsSync(warehousePath)) {
-                fs.rmSync(warehousePath, {recursive: true, force: true})
-            }
-            return {success: true}
-        }
-
-        // 1. 先删除文件夹（尽力而为，失败不阻塞数据库删除）
-        if (fs.existsSync(warehousePath)) {
-            try {
-                fs.rmSync(warehousePath, {recursive: true, force: true})
-            } catch (fsErr) {
-                console.error(`[DB] Warning: Failed to delete warehouse directory "${name}":`, fsErr.message)
-            }
-        }
-
-        // 2. 删除数据库记录（Track 通过 onDelete: Cascade 自动级联删除）
-        await db.musicLibrary.delete({where: {id: library.id}})
-
-        return {success: true}
-    } catch (err) {
-        return {success: false, error: err.message}
-    }
-}
-
-/**
- * 获取音乐库下的所有曲目
- * 优先从 SQLite 读取，同时校验每个文件是否还存在
- * 不存在的文件自动从数据库清除
- * @param {string} warehouseName
- * @returns {Promise<{ success: boolean, tracks?: Array<import('../pojo/do/Track')>, warehouseName?: string, error?: string }>}
- */
-async function getWarehouseTracks(warehouseName) {
-    const db = getDb()
-
-    try {
-        const library = await db.musicLibrary.findUnique({
-            where: {name: warehouseName},
-        })
-
-        if (!library) {
-            return {success: false, error: `音乐库 "${warehouseName}" 不存在`}
-        }
-
-        const tracks = await db.track.findMany({
-            where: {libraryId: library.id},
-            orderBy: {createdAt: 'desc'},
-        })
-
-        // 一致性校验：检查每个文件是否存在
-        const validTracks = []
-        const orphanIds = []
-
-        for (const track of tracks) {
-            if (fs.existsSync(track.path)) {
-                validTracks.push(Track.from({
-                    id: track.id,
-                    libraryId: track.libraryId,
-                    name: track.name,
-                    title: track.title || track.name,
-                    artist: track.artist || '',
-                    album: track.album || '',
-                    duration: track.duration || 0,
-                    path: track.path,
-                    format: track.format,
-                    size: track.size,
-                    modified: track.modified || 0,
-                    isEncrypted: track.isEncrypted,
-                    warehouse: warehouseName,
-                    warehouseId: library.id,
-                    createdAt: track.createdAt,
-                    updatedAt: track.updatedAt,
-                }))
-            } else {
-                // 文件已不存在，标记为孤儿记录
-                console.warn(`[DB Sync] Track "${track.name}" file not found at "${track.path}", removing from database`)
-                orphanIds.push(track.id)
-            }
-        }
-
-        // 批量删除孤儿记录
-        if (orphanIds.length > 0) {
-            await db.track.deleteMany({
-                where: {id: {in: orphanIds}},
-            })
-        }
-
-        return {
-            success: true,
-            warehouseName,
-            tracks: validTracks,
-            libraryId: library.id,
-            warehouse: {name: library.name, description: library.description || '', coverPath: library.coverPath || ''}
-        }
-    } catch (err) {
-        return {success: false, error: err.message}
-    }
-}
-
-/**
- * 导入文件到音乐库
- * 先复制文件，成功后插入 SQLite
- * @param {string} warehouseName
- * @param {string[]} filePaths
- * @returns {Promise<{ success: boolean, result?: import('../pojo/vo/ResponseVOs').ImportResultVO, error?: string }>}
- */
-async function importFilesToWarehouse(warehouseName, filePaths) {
-    const db = getDb()
-    const root = getMusicWarehouseRoot()
-    const musicDir = path.join(root, warehouseName, 'music')
-
-    // 确保 music 目录存在
-    if (!fs.existsSync(musicDir)) {
-        fs.mkdirSync(musicDir, {recursive: true})
-    }
-
-    // 查找对应的数据库记录
-    const library = await db.musicLibrary.findUnique({
-        where: {name: warehouseName},
-    })
-
-    if (!library) {
-        return {success: false, error: `音乐库 "${warehouseName}" 不存在`}
-    }
-
-    const imported = []
-    const skipped = []
-
-    for (const filePath of filePaths) {
-        try {
-            const ext = path.extname(filePath).toLowerCase()
-            if (!ALL_IMPORTABLE_EXTENSIONS.includes(ext)) {
-                skipped.push(filePath)
-                continue
-            }
-
-            // 检查源文件是否存在
-            if (!fs.existsSync(filePath)) {
-                skipped.push(filePath)
-                continue
-            }
-
-            const fileName = path.basename(filePath)
-            const destPath = path.join(musicDir, fileName)
-
-            // 避免覆盖同名文件
-            let finalPath = destPath
-            let finalName = fileName
-            let counter = 1
-            while (fs.existsSync(finalPath)) {
-                const nameWithoutExt = path.basename(filePath, ext)
-                finalName = `${nameWithoutExt}_${counter}${ext}`
-                finalPath = path.join(musicDir, finalName)
-                counter++
-            }
-
-            // 1. 先复制文件
-            fs.copyFileSync(filePath, finalPath)
-
-            // 2. 文件复制成功后，插入数据库
-            try {
-                const stats = fs.statSync(finalPath)
-                const trackId = crypto.randomUUID()
-                const isEncrypted = ENCRYPTED_FORMATS.includes(ext.replace('.', ''))
-
-                const trackData = {
-                    id: trackId,
-                    libraryId: library.id,
-                    name: finalName,
-                    title: path.basename(finalName, ext),
-                    path: finalPath,
-                    format: ext.replace('.', ''),
-                    size: stats.size,
-                    modified: stats.mtimeMs,
-                    isEncrypted,
-                }
-
-                if (!isEncrypted && SUPPORTED_EXTENSIONS.includes(ext)) {
-                    const meta = await parseAudioMetadata(finalPath)
-                    const nameMeta = parseFileName(finalName)
-                    trackData.title = meta.title || nameMeta.title || trackData.title
-                    trackData.artist = meta.artist || nameMeta.artist || ''
-                    trackData.duration = meta.duration || 0
-                }
-
-                await db.track.create({data: trackData})
-
-                imported.push(finalPath)
-            } catch (dbErr) {
-                // 数据库插入失败，清理已复制的文件
-                console.error(`[DB] Failed to insert track "${finalName}" into database, cleaning up file`)
-                try {
-                    fs.unlinkSync(finalPath)
-                } catch (_) {
-                }
-                skipped.push(filePath)
-            }
-        } catch (e) {
-            skipped.push(filePath)
-        }
-    }
-
-    return {
-        success: true,
-        result: new ImportResultVO({imported: imported.length, skipped: skipped.length}),
-    }
-}
-
-/**
- * 获取音乐仓库根目录
- */
-function getMusicWarehouseDir() {
-    return getMusicWarehouseRoot()
-}
-
-/**
- * 同步指定音乐库的数据
- * 将文件系统中存在但数据库中没有的文件补充到数据库
- * @param {string} warehouseName
- * @returns {Promise<{ added: number, removed: number }>}
- */
-async function syncWarehouse(warehouseName) {
-    const db = getDb()
-    const root = getMusicWarehouseRoot()
-    const musicDir = path.join(root, warehouseName, 'music')
-
-    const library = await db.musicLibrary.findUnique({
-        where: {name: warehouseName},
-    })
-
-    if (!library) return {added: 0, removed: 0}
-
-    // 1. 从数据库获取所有记录
-    const dbTracks = await db.track.findMany({
-        where: {libraryId: library.id},
-    })
-    const dbPathSet = new Set(dbTracks.map(t => t.path))
-
-    // 2. 从文件系统扫描所有音频文件
-    const fsFiles = []
-    if (fs.existsSync(musicDir)) {
-        scanMusicDirForSync(musicDir, fsFiles)
-    }
-    const fsPathSet = new Set(fsFiles.map(f => f.path))
-
-    // 3. 找出数据库中有但文件系统中没有的 -> 从数据库删除
-    const orphanTracks = dbTracks.filter(t => !fsPathSet.has(t.path))
-    let removed = 0
-    if (orphanTracks.length > 0) {
-        const result = await db.track.deleteMany({
-            where: {id: {in: orphanTracks.map(t => t.id)}},
-        })
-        removed = result.count
-    }
-
-    // 4. 找出文件系统中有但数据库中没有的 -> 添加到数据库
-    const newFiles = fsFiles.filter(f => !dbPathSet.has(f.path))
-    let added = 0
-    for (const file of newFiles) {
-        try {
-            const ext = path.extname(file.name).toLowerCase()
-            const isEncrypted = ENCRYPTED_FORMATS.includes(ext.replace('.', ''))
-
-            const trackData = {
-                id: crypto.randomUUID(),
-                libraryId: library.id,
-                name: file.name,
-                title: path.basename(file.name, ext),
-                path: file.path,
-                format: ext.replace('.', ''),
-                size: file.size,
-                modified: file.modified,
-                isEncrypted,
-            }
-
-            if (!isEncrypted && SUPPORTED_EXTENSIONS.includes(ext)) {
-                const meta = await parseAudioMetadata(file.path)
-                const nameMeta = parseFileName(file.name)
-                trackData.title = meta.title || nameMeta.title || trackData.title
-                trackData.artist = meta.artist || nameMeta.artist || ''
-                trackData.duration = meta.duration || 0
-            }
-
-            await db.track.create({data: trackData})
-            added++
-        } catch (e) {
-            // 可能路径重复，跳过
-        }
-    }
-
-    return {added, removed}
-}
-
-/**
  * 递归扫描音乐目录（同步辅助函数）
  */
 function scanMusicDirForSync(dir, result) {
@@ -547,28 +236,46 @@ function scanMusicDirForSync(dir, result) {
 }
 
 /**
- * 更新音乐库信息
- * @param {string} oldName - 原始名称（用于查找记录）
+ * 通过 ID 更新音乐库的最近播放时间（名称变更安全）
+ * @param {string} libraryId - 音乐库 UUID
+ * @returns {Promise<{ success: boolean }>}
+ */
+async function updateRecentPlayedById(libraryId) {
+    const db = getDb()
+    try {
+        await db.musicLibrary.update({
+            where: {id: libraryId},
+            data: {recentPlayedAt: new Date()},
+        })
+        return {success: true}
+    } catch (err) {
+        return {success: false, error: err.message}
+    }
+}
+
+/**
+ * 更新音乐库信息（通过 library ID）
+ * @param {string} libraryId - 音乐库 UUID
  * @param {Object} updates - 要更新的字段
  * @param {string} [updates.name] - 新名称
  * @param {string} [updates.description] - 新描述
  * @param {string} [updates.coverPath] - 新封面 Base64
  * @returns {Promise<{ success: boolean, warehouse?: import('../pojo/vo/ResponseVOs').WarehouseItemVO, error?: string }>}
  */
-async function updateWarehouse(oldName, updates) {
+async function updateWarehouseById(libraryId, updates) {
     const db = getDb()
     const root = getMusicWarehouseRoot()
 
     try {
-        const library = await db.musicLibrary.findUnique({where: {name: oldName}})
+        const library = await db.musicLibrary.findUnique({where: {id: libraryId}})
         if (!library) {
-            return {success: false, error: `音乐库 "${oldName}" 不存在`}
+            return {success: false, error: `音乐库不存在`}
         }
 
         // 如果要改名，需要重命名文件夹并更新所有 track 的路径
-        const needRename = updates.name && updates.name !== oldName
+        const needRename = updates.name && updates.name !== library.name
         if (needRename) {
-            const oldPath = path.join(root, oldName)
+            const oldPath = path.join(root, library.name)
             const newPath = path.join(root, updates.name)
             // 检查新名称是否已存在文件夹
             if (fs.existsSync(newPath)) {
@@ -625,42 +332,6 @@ async function updateWarehouse(oldName, updates) {
         if (err.code === 'P2002') {
             return {success: false, error: `音乐库名已存在`}
         }
-        return {success: false, error: err.message}
-    }
-}
-
-/**
- * 更新音乐库的最近播放时间
- * @param {string} warehouseName - 音乐库名称
- * @returns {Promise<{ success: boolean }>}
- */
-async function updateRecentPlayed(warehouseName) {
-    const db = getDb()
-    try {
-        await db.musicLibrary.update({
-            where: {name: warehouseName},
-            data: {recentPlayedAt: new Date()},
-        })
-        return {success: true}
-    } catch (err) {
-        return {success: false, error: err.message}
-    }
-}
-
-/**
- * 通过 ID 更新音乐库的最近播放时间（名称变更安全）
- * @param {string} libraryId - 音乐库 UUID
- * @returns {Promise<{ success: boolean }>}
- */
-async function updateRecentPlayedById(libraryId) {
-    const db = getDb()
-    try {
-        await db.musicLibrary.update({
-            where: {id: libraryId},
-            data: {recentPlayedAt: new Date()},
-        })
-        return {success: true}
-    } catch (err) {
         return {success: false, error: err.message}
     }
 }
@@ -1054,17 +725,11 @@ module.exports = {
     getMusicWarehouseRoot,
     getAllWarehouses,
     createWarehouse,
-    deleteWarehouse,
     deleteWarehouseById,
-    getWarehouseTracks,
     getWarehouseTracksById,
-    importFilesToWarehouse,
     importFilesToWarehouseById,
-    getMusicWarehouseDir,
-    syncWarehouse,
     syncWarehouseById,
-    updateWarehouse,
-    updateRecentPlayed,
+    updateWarehouseById,
     updateRecentPlayedById,
     resolveTrackById,
     updateTrack,

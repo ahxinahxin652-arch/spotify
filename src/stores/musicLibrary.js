@@ -33,11 +33,11 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
     }
   }
 
-  async function updateWarehouse(oldName, updates) {
+  async function updateWarehouse(libraryId, updates) {
     try {
-      const result = await window.electronAPI.updateMusicWarehouse(oldName, updates)
+      const result = await window.electronAPI.updateMusicWarehouseById(libraryId, updates)
       if (result.success && result.data) {
-        const idx = warehouses.value.findIndex(w => w.name === oldName)
+        const idx = warehouses.value.findIndex(w => w.id === libraryId)
         if (idx !== -1) {
           warehouses.value[idx] = result.data.warehouse
         }
@@ -50,18 +50,11 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
     }
   }
 
-  async function deleteWarehouse(name) {
+  async function deleteWarehouse(libraryId) {
     try {
-      // 优先通过 ID 删除（稳定），找到对应的仓库记录获取 id
-      const warehouse = warehouses.value.find(w => w.name === name)
-      let result
-      if (warehouse && warehouse.id) {
-        result = await window.electronAPI.deleteMusicWarehouseById(warehouse.id)
-      } else {
-        result = await window.electronAPI.deleteMusicWarehouse(name)
-      }
+      const result = await window.electronAPI.deleteMusicWarehouseById(libraryId)
       if (result.success) {
-        warehouses.value = warehouses.value.filter(w => w.name !== name)
+        warehouses.value = warehouses.value.filter(w => w.id !== libraryId)
         return true
       }
       return false
