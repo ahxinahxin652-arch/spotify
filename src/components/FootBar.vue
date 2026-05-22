@@ -83,16 +83,23 @@ function handleTogglePlayEvent() {
   togglePlay()
 }
 
+function handleStopPlayerEvent() {
+  stopCurrent()
+  player.reset()
+}
+
 onMounted(() => {
   window.addEventListener('play-track', handlePlayTrackEvent)
   window.addEventListener('track-deleted', handleTrackDeletedEvent)
   window.addEventListener('toggle-play', handleTogglePlayEvent)
+  window.addEventListener('stop-player', handleStopPlayerEvent)
 })
 
 onUnmounted(() => {
   window.removeEventListener('play-track', handlePlayTrackEvent)
   window.removeEventListener('track-deleted', handleTrackDeletedEvent)
   window.removeEventListener('toggle-play', handleTogglePlayEvent)
+  window.removeEventListener('stop-player', handleStopPlayerEvent)
   window.removeEventListener('resize', refreshOverflow)
   stopCurrent()
 })

@@ -55,6 +55,14 @@ export const useMusicLibraryStore = defineStore('musicLibrary', () => {
       const result = await window.electronAPI.deleteMusicWarehouseById(libraryId)
       if (result.success) {
         warehouses.value = warehouses.value.filter(w => w.id !== libraryId)
+        
+        // 如果正在播放该音乐库的音乐，则停止播放并清理内存
+        const { usePlayerStore } = await import('./player')
+        const playerStore = usePlayerStore()
+        if (playerStore.currentTrack && (playerStore.currentTrack.libraryId === libraryId || playerStore.currentTrack.warehouseId === libraryId)) {
+          window.dispatchEvent(new CustomEvent('stop-player'))
+        }
+        
         return true
       }
       return false
