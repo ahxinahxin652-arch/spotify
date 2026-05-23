@@ -30,11 +30,16 @@ const metaForm = ref({
   totalTracks: '',
   discNumber: '',
   totalDiscs: '',
-  comment: ''
+  comment: '',
+  lyrics: ''
 })
 
 const ALLOWED_IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp']
 const COMPRESS_SIZE = 1000
+
+// LRC 上传引用
+const lrcInputRef = ref(null)
+const lrcFileName = ref('')
 
 // --- Methods ---
 
@@ -72,8 +77,10 @@ async function loadFile(path) {
         totalTracks: data.totalTracks || '',
         discNumber: data.discNumber || '',
         totalDiscs: data.totalDiscs || '',
-        comment: data.comment || ''
+        comment: data.comment || '',
+        lyrics: data.lyrics || ''
       }
+      lrcFileName.value = data.lyrics ? '已包含内置歌词' : ''
       coverBase64.value = data.cover || ''
       coverChanged.value = false
       isLoaded.value = true
@@ -113,6 +120,32 @@ async function handleCoverUpload(e) {
 function removeCover() {
   coverBase64.value = ''
   coverChanged.value = true
+}
+
+function triggerLrcInput() {
+  lrcInputRef.value?.click()
+}
+
+function handleLrcUpload(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  if (!file.name.toLowerCase().endsWith('.lrc') && file.type !== 'text/plain') {
+    ElMessage.error('请选择有效的 .lrc 歌词文件')
+    e.target.value = ''
+    return
+  }
+  
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    metaForm.value.lyrics = ev.target.result
+    lrcFileName.value = file.name
+    ElMessage.success('歌词已导入，请点击保存生效')
+  }
+  reader.onerror = () => {
+    ElMessage.error('读取歌词文件失败')
+  }
+  reader.readAsText(file, 'utf-8')
+  e.target.value = ''
 }
 
 function resizeImage(file, maxPx) {
@@ -261,6 +294,22 @@ function handleChangeFile() {
         </div>
         <div class="form-container">
           <div class="form-grid">
+            <div class="form-row">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label class="form-label" style="margin-bottom: 0;">Lyrics (LRC)</label>
+                <input ref="lrcInputRef" type="file" accept=".lrc,text/plain" style="display: none" @change="handleLrcUpload" />
+                <button class="btn-small" style="padding: 4px 10px; font-size: 12px;" @click="triggerLrcInput">Import .lrc file</button>
+              </div>
+              <div v-if="lrcFileName" style="margin-top: 8px; font-size: 14px; color: #1ed760;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <span style="vertical-align: middle;">{{ lrcFileName }}</span>
+              </div>
+              <div v-else style="margin-top: 8px; font-size: 14px; color: rgba(255, 255, 255, 0.4);">
+                未包含歌词，请导入 .lrc 文件
+              </div>
+            </div>
             <div class="form-row">
               <label class="form-label">Title</label>
               <input v-model="metaForm.title" class="form-input" placeholder="Title" />

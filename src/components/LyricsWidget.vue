@@ -1,0 +1,130 @@
+<script setup>
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+
+import '../styles/lyricsWidget.css'
+
+const lyrics = ref([]) // { time: number, text: string }
+const currentTime = ref(0)
+const currentIndex = ref(-1)
+
+const lyricsContainerRef = ref(null)
+
+function closeWindow() {
+  if (window.electronAPI && window.electronAPI.toggleLyricsWindow) {
+    window.electronAPI.toggleLyricsWindow()
+  }
+}
+
+// 解析 LRC 格式
+function parseLRC(lrcString) {
+  if (!lrcString) return []
+  const lines = lrcString.split('\n')
+  const result = []
+  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g
+  
+  for (const line of lines) {
+    const text = line.replace(timeRegex, '').trim()
+    let match
+    timeRegex.lastIndex = 0
+    while ((match = timeRegex.exec(line)) !== null) {
+      const min = parseInt(match[1], 10)
+      const sec = parseInt(match[2], 10)
+      const ms = parseInt(match[3], 10)
+      // 如果毫秒是两位数，则相当于几十毫秒 (如 .99 = 990ms)，如果是三位数则是真实的毫秒
+      const msFactor = match[3].length === 2 ? 10 : 1
+      const timeInSec = min * 60 + sec + (ms * msFactor) / 1000
+      result.push({ time: timeInSec, text })
+    }
+  }
+  
+  // 按照时间排序
+  result.sort((a, b) => a.time - b.time)
+  return result
+}
+
+// 接收主进程消息
+onMounted(() => {
+  if (window.electronAPI && window.electronAPI.onLyricsStatusUpdate) {
+    window.electronAPI.onLyricsStatusUpdate((data) => {
+      // data: { lyrics: string, currentTime: number, isNew: boolean }
+      
+      // 如果是第一次或者换歌了，重新解析
+      if (data.isNew) {
+        if (data.lyrics) {
+          lyrics.value = parseLRC(data.lyrics)
+        } else {
+          lyrics.value = []
+        }
+      }
+      
+      currentTime.value = data.currentTime || 0
+      updateHighlight()
+    })
+  }
+})
+
+function updateHighlight() {
+  if (lyrics.value.length === 0) {
+    currentIndex.value = -1
+    return
+  }
+  
+  const time = currentTime.value
+  let newIndex = -1
+  for (let i = 0; i < lyrics.value.length; i++) {
+    if (time >= lyrics.value[i].time) {
+      newIndex = i
+    } else {
+      break
+    }
+  }
+  
+  if (newIndex !== currentIndex.value) {
+    currentIndex.value = newIndex
+    scrollToCurrent()
+  }
+}
+
+function scrollToCurrent() {
+  nextTick(() => {
+    if (!lyricsContainerRef.value) return
+    const container = lyricsContainerRef.value
+    const activeLine = container.querySelector('.lyric-line.active')
+    if (activeLine) {
+      // 滚动使高亮行居中
+      const containerHeight = container.clientHeight
+      const offsetTop = activeLine.offsetTop
+      const itemHeight = activeLine.clientHeight
+      const scrollTop = offsetTop - (containerHeight / 2) + (itemHeight / 2)
+      container.scrollTo({ top: scrollTop, behavior: 'smooth' })
+    }
+  })
+}
+</script>
+
+<template>
+  <div class="lyrics-widget">
+    <div class="toolbar">
+      <!-- 关闭按钮：让主进程隐藏本窗口 -->
+      <button class="close-btn" @click="closeWindow">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="lyrics-container" ref="lyricsContainerRef">
+      <div v-if="lyrics.length === 0" class="no-lyrics">暂无歌词</div>
+      <div 
+        v-else 
+        v-for="(line, index) in lyrics" 
+        :key="index"
+        class="lyric-line"
+        :class="{ active: index === currentIndex }"
+      >
+        {{ line.text || ' ' }}
+      </div>
+    </div>
+  </div>
+</template>

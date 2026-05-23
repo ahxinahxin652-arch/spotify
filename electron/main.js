@@ -141,6 +141,44 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null })
 }
 
+// ========== 歌词悬浮窗 ==========
+let lyricsWindow = null
+
+function createLyricsWindow() {
+  if (lyricsWindow) return
+
+  lyricsWindow = new BrowserWindow({
+    width: 800,
+    height: 120,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    hasShadow: false,
+    resizable: false,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+    },
+    show: false,
+  })
+
+  // 不让鼠标点击穿透，或者让它穿透（酷狗歌词默认是可以穿透的，只有悬浮时才显示工具栏，为了简单先不穿透）
+  // lyricsWindow.setIgnoreMouseEvents(true, { forward: true }) // 先不加
+
+  const isDev = process.env.NODE_ENV !== 'production' && !app.isPackaged
+  if (isDev) {
+    lyricsWindow.loadURL('http://localhost:5173/#/lyrics-widget')
+  } else {
+    // vue router hash mode
+    lyricsWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: '/lyrics-widget' })
+  }
+
+  lyricsWindow.on('closed', () => { lyricsWindow = null })
+}
+
 // ========== Express 服务器 ==========
 function startExpressServer() {
   const expressApp = express()
@@ -183,6 +221,23 @@ function setupWindowControls() {
     else mainWindow.maximize()
   })
   ipcMain.on('window-close', () => mainWindow && mainWindow.close())
+
+  ipcMain.on('toggle-lyrics-window', () => {
+    if (!lyricsWindow) {
+      createLyricsWindow()
+    }
+    if (lyricsWindow.isVisible()) {
+      lyricsWindow.hide()
+    } else {
+      lyricsWindow.show()
+    }
+  })
+
+  ipcMain.on('update-lyrics-status', (event, data) => {
+    if (lyricsWindow && !lyricsWindow.isDestroyed()) {
+      lyricsWindow.webContents.send('on-lyrics-status-update', data)
+    }
+  })
 
   // 选择文件，处理前端选择音乐文件的请求
   ipcMain.handle('dialog:selectMusicFiles', async () => {
@@ -254,6 +309,9 @@ app.whenReady().then(async () => {
 
   // 5. 创建窗口
   createWindow()
+  
+  // 初始化歌词窗口
+  createLyricsWindow()
 
   // 6. 启动 Express 服务器 (此时 mainWindow 已经被创建)
   startExpressServer()

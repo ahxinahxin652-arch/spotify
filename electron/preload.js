@@ -203,6 +203,16 @@ ipcRenderer.on('window-maximized-changed', (event, isMaximized) => {
 })
 function onWindowMaximized(callback) { maximizedCallback = callback }
 
+// ========== 歌词悬浮窗控制 ==========
+function toggleLyricsWindow() { ipcRenderer.send('toggle-lyrics-window') }
+function sendLyricsStatus(data) { ipcRenderer.send('update-lyrics-status', data) }
+
+let lyricsStatusCallback = null
+ipcRenderer.on('on-lyrics-status-update', (event, data) => {
+  if (lyricsStatusCallback) lyricsStatusCallback(data)
+})
+function onLyricsStatusUpdate(callback) { lyricsStatusCallback = callback }
+
 // ========== 选择音频文件 ==========
 async function selectMusicFiles() {
   try {
@@ -248,6 +258,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximizeWindow,
   closeWindow,
   onWindowMaximized,
+  // 歌词悬浮窗
+  toggleLyricsWindow,
+  sendLyricsStatus,
+  onLyricsStatusUpdate,
   // 选择文件
   selectMusicFiles,
   // 文件读取

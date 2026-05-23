@@ -7,6 +7,7 @@ import { Howl } from 'howler'
 // ========== 状态 ==========
 let currentBlobUrl = null
 let howl = null
+let currentLyrics = ''
 
 const player = usePlayerStore()
 const sidebarStore = useSidebarStore()
@@ -59,6 +60,12 @@ const emit = defineEmits(['toggle-right-sidebar'])
 
 function handleToggleSidebar() {
   emit('toggle-right-sidebar')
+}
+
+function handleToggleLyrics() {
+  if (window.electronAPI && window.electronAPI.toggleLyricsWindow) {
+    window.electronAPI.toggleLyricsWindow()
+  }
 }
 
 // ========== 监听外部播放事件 ==========
@@ -140,6 +147,21 @@ async function playTrack(track, playlist = [], index = -1) {
   if (currentTrack.warehouseId) {
     window.electronAPI.updateRecentPlayedById(currentTrack.warehouseId).catch(() => {})
   }
+  
+  // 异步获取歌词信息并推送给悬浮窗
+  currentLyrics = ''
+  window.electronAPI.getFileMetadata(currentTrack.path).then(res => {
+    if (res.success && res.data) {
+      currentLyrics = res.data.lyrics || ''
+      if (window.electronAPI.sendLyricsStatus) {
+        window.electronAPI.sendLyricsStatus({
+          lyrics: currentLyrics,
+          currentTime: 0,
+          isNew: true
+        })
+      }
+    }
+  }).catch(() => {})
 
   // 通过 Electron IPC 读取文件为 Blob，绕过 file:// 限制
   let audioBlob
@@ -290,6 +312,14 @@ function startProgressLoop() {
     if (howl && player.isPlaying && !isDragging.value) {
       const t = howl.seek()
       player.setCurrentTime(t)
+      
+      // 同步给歌词悬浮窗
+      if (window.electronAPI && window.electronAPI.sendLyricsStatus) {
+        window.electronAPI.sendLyricsStatus({
+          currentTime: t,
+          isNew: false
+        })
+      }
     }
   }, 250)
 }
@@ -451,6 +481,16 @@ onUnmounted(() => {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
           <line x1="9" y1="3" x2="9" y2="21"/>
+        </svg>
+      </button>
+
+      <button
+        class="ctrl-btn lyrics-btn"
+        @click="handleToggleLyrics"
+        title="桌面歌词"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
         </svg>
       </button>
 

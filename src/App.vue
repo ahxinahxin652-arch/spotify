@@ -62,7 +62,10 @@ function onSidebarAfterLeave() {
 </script>
 
 <template>
-  <div class="app">
+  <div v-if="currentRoute === 'LyricsWidget'" style="width: 100%; height: 100%;">
+    <router-view />
+  </div>
+  <div v-else class="app">
     <!-- ===== 自定义标题栏 ===== -->
     <header class="titlebar" @dblclick="handleMaximize">
       <!-- Logo -->

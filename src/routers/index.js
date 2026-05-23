@@ -31,6 +31,11 @@ const routes = [
     name: 'MusicEdit',
     component: () => import('../views/MusicEditView.vue'),
   },
+  {
+    path: '/lyrics-widget',
+    name: 'LyricsWidget',
+    component: () => import('../components/LyricsWidget.vue'),
+  }
 ]
 
 const router = createRouter({

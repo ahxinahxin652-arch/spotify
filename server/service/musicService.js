@@ -228,6 +228,35 @@ async function getFileMetadata(filePath) {
       const buf = Buffer.isBuffer(pic.data) ? pic.data : Buffer.from(pic.data)
       coverBase64 = `data:${mime};base64,${buf.toString('base64')}`
     }
+
+    let lyricsStr = '';
+    if (meta.native) {
+      const id3v23 = meta.native['ID3v2.3'] || [];
+      const id3v24 = meta.native['ID3v2.4'] || [];
+      for (const tag of [...id3v23, ...id3v24]) {
+        if (tag.id === 'TXXX:USLT' || tag.id === 'USLT') {
+          lyricsStr = tag.value;
+        }
+      }
+      const vorbis = meta.native.vorbis || [];
+      for (const tag of vorbis) {
+        if (tag.id === 'LYRICS' || tag.id === 'lyrics') {
+          lyricsStr = tag.value;
+        }
+      }
+    }
+    if (!lyricsStr && meta.common && meta.common.lyrics) {
+      if (Array.isArray(meta.common.lyrics)) {
+        if (typeof meta.common.lyrics[0] === 'string') {
+          lyricsStr = meta.common.lyrics.join('\n');
+        } else if (meta.common.lyrics[0].text) {
+          lyricsStr = meta.common.lyrics.map(l => l.text).join('\n');
+        }
+      } else if (typeof meta.common.lyrics === 'string') {
+        lyricsStr = meta.common.lyrics;
+      }
+    }
+
     return ApiResult.ok({
       title: meta.common.title || '',
       artist: meta.common.artist || '',
@@ -240,6 +269,7 @@ async function getFileMetadata(filePath) {
       discNumber: meta.common.disk?.no || '',
       totalDiscs: meta.common.disk?.of || '',
       comment: meta.common.comment ? meta.common.comment.join(', ') : '',
+      lyrics: lyricsStr,
       cover: coverBase64
     })
   } catch (err) {
@@ -270,6 +300,7 @@ async function updateFileMetadata(filePath, data) {
   addMeta('genre', data.genre)
   addMeta('date', data.year)
   addMeta('comment', data.comment)
+  addMeta('lyrics', data.lyrics)
 
   let trackNo = data.trackNumber ? String(data.trackNumber) : ''
   if (data.totalTracks) trackNo += '/' + data.totalTracks
