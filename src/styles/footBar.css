@@ -318,7 +318,8 @@
     transition: all 0.15s;
 }
 
-.sidebar-toggle-btn.active {
+.sidebar-toggle-btn.active,
+.lyrics-btn.active {
     color: var(--accent);
 }
 

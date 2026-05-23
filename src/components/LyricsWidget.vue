@@ -9,6 +9,32 @@ const currentIndex = ref(-1)
 
 const lyricsContainerRef = ref(null)
 
+const isDragging = ref(false)
+const dragOffset = { x: 0, y: 0 }
+
+function onPointerDown(e) {
+  if (e.target.closest('.toolbar')) return
+  e.target.setPointerCapture(e.pointerId)
+  isDragging.value = true
+  dragOffset.x = e.screenX - window.screenX
+  dragOffset.y = e.screenY - window.screenY
+}
+
+function onPointerMove(e) {
+  if (isDragging.value && window.electronAPI && window.electronAPI.moveWindow) {
+    const x = e.screenX - dragOffset.x
+    const y = e.screenY - dragOffset.y
+    window.electronAPI.moveWindow(x, y)
+  }
+}
+
+function onPointerUp(e) {
+  if (isDragging.value) {
+    isDragging.value = false
+    e.target.releasePointerCapture(e.pointerId)
+  }
+}
+
 function closeWindow() {
   if (window.electronAPI && window.electronAPI.toggleLyricsWindow) {
     window.electronAPI.toggleLyricsWindow()
@@ -103,7 +129,12 @@ function scrollToCurrent() {
 </script>
 
 <template>
-  <div class="lyrics-widget">
+  <div 
+    class="lyrics-widget"
+    @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
+    @pointerup="onPointerUp"
+  >
     <div class="toolbar">
       <!-- 关闭按钮：让主进程隐藏本窗口 -->
       <button class="close-btn" @click="closeWindow">

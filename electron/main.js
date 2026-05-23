@@ -242,6 +242,12 @@ function setupWindowControls() {
     }
   })
 
+  ipcMain.on('window-move', (event, { x, y }) => {
+    if (lyricsWindow && !lyricsWindow.isDestroyed()) {
+      lyricsWindow.setPosition(x, y)
+    }
+  })
+
   // 选择文件，处理前端选择音乐文件的请求
   ipcMain.handle('dialog:selectMusicFiles', async () => {
     try {

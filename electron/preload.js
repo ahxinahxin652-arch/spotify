@@ -206,6 +206,7 @@ function onWindowMaximized(callback) { maximizedCallback = callback }
 // ========== 歌词悬浮窗控制 ==========
 function toggleLyricsWindow() { ipcRenderer.send('toggle-lyrics-window') }
 function sendLyricsStatus(data) { ipcRenderer.send('update-lyrics-status', data) }
+function moveWindow(x, y) { ipcRenderer.send('window-move', { x, y }) }
 
 let lyricsStatusCallback = null
 ipcRenderer.on('on-lyrics-status-update', (event, data) => {
@@ -269,6 +270,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendLyricsStatus,
   onLyricsStatusUpdate,
   onLyricsWindowStateChange,
+  moveWindow,
   // 选择文件
   selectMusicFiles,
   // 文件读取

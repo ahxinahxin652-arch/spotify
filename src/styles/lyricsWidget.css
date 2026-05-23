@@ -18,15 +18,19 @@ html, body {
   display: flex;
   flex-direction: column;
   border-radius: 8px;
-  overflow: hidden;
-  /* 允许拖拽窗口 */
-  -webkit-app-region: drag;
+  /* 改为 no-drag，这样 hover 和 pointer 都能生效 */
+  -webkit-app-region: no-drag;
   color: #fff;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   backdrop-filter: blur(12px);
   cursor: pointer;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
+
+.lyrics-widget:hover {
+  cursor: pointer;
+}
+
 
 .toolbar {
   position: absolute;
@@ -36,9 +40,14 @@ html, body {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  opacity: 1;
+  opacity: 0; /* 默认隐藏 */
+  transition: opacity 0.3s ease;
   /* 按钮区域不可拖拽窗口 */
   -webkit-app-region: no-drag;
+}
+
+.lyrics-widget:hover .toolbar {
+  opacity: 1; /* 悬停时显示 */
 }
 
 .close-btn {
@@ -53,7 +62,7 @@ html, body {
   justify-content: center;
   cursor: pointer;
   padding: 0;
-  opacity: 0.3;
+  opacity: 0.8;
   transition: opacity 0.2s, background 0.2s;
 }
 .close-btn:hover {
