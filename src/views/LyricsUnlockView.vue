@@ -142,7 +142,7 @@ const currentFileName = () => {
     <div class="panel panel-files">
 
       <div class="panel-header">
-        <h2>待解密歌词文件</h2>
+        <h2>待解密文件</h2>
         <div class="header-actions">
           <button class="btn btn-small" @click="files = []" :disabled="files.length === 0 || isProcessing">清空</button>
           <button class="btn btn-small" @click="openFilePicker" :disabled="isProcessing">

@@ -121,7 +121,11 @@ function scrollToCurrent() {
         v-for="(line, index) in lyrics" 
         :key="index"
         class="lyric-line"
-        :class="{ active: index === currentIndex }"
+        :class="{ 
+          active: index === currentIndex,
+          'prev-1': index === currentIndex - 1,
+          'next-1': index === currentIndex + 1
+        }"
       >
         {{ line.text || ' ' }}
       </div>
