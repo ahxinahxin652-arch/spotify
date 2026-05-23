@@ -70,6 +70,28 @@ async function selectOutputPath() {
   }
 }
 
+// 注册进度监听器
+window.electronAPI.onLyricsDecryptProgress((data) => {
+  if (data.type === 'file-progress') {
+    fileProgress.value = data.progress
+    totalProgress.value = data.totalProgress
+    currentFileIndex.value = data.index
+  } else if (data.type === 'file-done') {
+    addLog('success', `完成: ${data.filename}`)
+    fileProgress.value = 100
+    if (data.totalProgress !== undefined) {
+      totalProgress.value = data.totalProgress
+    }
+  } else if (data.type === 'all-done') {
+    addLog('success', `===== 全部解密完成！共 ${data.total} 个文件 =====`)
+    addLog('success', `输出目录: ${data.outputPath}`)
+    isProcessing.value = false
+    totalProgress.value = 100
+  } else if (data.type === 'error') {
+    addLog('error', `解密出错: ${data.error}`)
+  }
+})
+
 async function startDecrypt() {
   if (files.value.length === 0) {
     addLog('warn', '没有可解密的文件')
@@ -98,24 +120,6 @@ async function startDecrypt() {
     isProcessing.value = false
     return
   }
-
-  window.electronAPI.onLyricsDecryptProgress((data) => {
-    if (data.type === 'file-progress') {
-      fileProgress.value = data.progress
-      totalProgress.value = data.totalProgress
-      currentFileIndex.value = data.index
-    } else if (data.type === 'file-done') {
-      addLog('success', `完成: ${data.filename}`)
-      fileProgress.value = 100
-    } else if (data.type === 'all-done') {
-      addLog('success', `===== 全部解密完成！共 ${data.total} 个文件 =====`)
-      addLog('success', `输出目录: ${data.outputPath}`)
-      isProcessing.value = false
-      totalProgress.value = 100
-    } else if (data.type === 'error') {
-      addLog('error', `解密出错: ${data.error}`)
-    }
-  })
 }
 
 function formatSize(bytes) {

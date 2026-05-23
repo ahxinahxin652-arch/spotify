@@ -110,6 +110,9 @@ async function startConvert() {
     } else if (data.type === 'file-done') {
       addLog('success', `完成: ${data.filename}`)
       fileProgress.value = 100
+      if (data.totalProgress !== undefined) {
+        totalProgress.value = data.totalProgress
+      }
     } else if (data.type === 'all-done') {
       addLog('success', `===== 全部转换完成！共 ${data.total} 个文件 =====`)
       addLog('success', `输出目录: ${data.outputPath}`)

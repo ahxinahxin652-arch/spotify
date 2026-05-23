@@ -80,8 +80,8 @@ function getFfmpegPath() {
  */
 function convertFile(ffmpegPath, inputFile, outputFile, onProgress) {
   return new Promise((resolve, reject) => {
-    const durationRegex = /Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/
-    const timeRegex = /time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/
+    const durationRegex = /Duration:\s+(\d{2}):(\d{2}):(\d{2})\.(\d+)/
+    const timeRegex = /time=\s*(\d{2}):(\d{2}):(\d{2})\.(\d+)/
 
     let durationMs = 0
     let progressEmitted = 0
@@ -135,24 +135,34 @@ function parseProgress(str, durationRegex, timeRegex, durationMs, progressEmitte
     const h = parseInt(durMatch[1])
     const m = parseInt(durMatch[2])
     const s = parseInt(durMatch[3])
-    const cs = parseInt(durMatch[4])
-    const newDurationMs = ((h * 3600 + m * 60 + s) * 100 + cs) * 10
+    const frac = parseFloat('0.' + durMatch[4])
+    const newDurationMs = Math.round(((h * 3600 + m * 60 + s) + frac) * 1000)
     update(newDurationMs, progressEmitted)
+    durationMs = newDurationMs // update local variable for timeMatch in same chunk
   }
 
-  const timeMatch = str.match(timeRegex)
-  if (timeMatch && durationMs > 0) {
-    const h = parseInt(timeMatch[1])
-    const m = parseInt(timeMatch[2])
-    const s = parseInt(timeMatch[3])
-    const cs = parseInt(timeMatch[4])
-    const currentMs = ((h * 3600 + m * 60 + s) * 100 + cs) * 10
-    const pct = Math.min(100, Math.round((currentMs / durationMs) * 100))
+  // use global match to find the LAST time= in the chunk
+  let timeStr = str
+  const timeMatches = [...str.matchAll(new RegExp(timeRegex, 'g'))]
+  if (timeMatches.length > 0) {
+    const timeMatch = timeMatches[timeMatches.length - 1]
+    if (durationMs > 0) {
+      const h = parseInt(timeMatch[1])
+      const m = parseInt(timeMatch[2])
+      const s = parseInt(timeMatch[3])
+      const frac = parseFloat('0.' + timeMatch[4])
+      const currentMs = Math.round(((h * 3600 + m * 60 + s) + frac) * 1000)
+      const pct = Math.min(100, Math.round((currentMs / durationMs) * 100))
 
-    if (pct > progressEmitted) {
-      update(durationMs, pct)
-      onProgress(pct)
+      if (pct > progressEmitted) {
+        update(durationMs, pct)
+        onProgress(pct)
+      }
     }
+  } else {
+    // fallback if matchAll not used, but above we ensure we get the last one.
+    // Actually, matchAll requires global regex, so timeRegex must have 'g' flag.
+    // wait, timeRegex in convertFile doesn't have 'g'.
   }
 }
 

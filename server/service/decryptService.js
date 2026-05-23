@@ -97,6 +97,7 @@ async function startDecrypt(files, outputPath, onProgress) {
 
     try {
       const result = await decryptDao.decryptFile(file.path, outputPath, 'mp3')
+      await new Promise(resolve => setTimeout(resolve, 10)) // Yield to event loop to allow IPC flush
 
       if (result.success) {
         onProgress(new ConvertProgressEvent({

@@ -13,6 +13,7 @@
     "electron:start": "electron ."
   },
   "dependencies": {
+    "@clamber_l/crypto": "^0.1.12",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@prisma/client": "^5.22.0",
     "element-plus": "^2.14.0",
