@@ -12,6 +12,9 @@ let currentLyrics = ''
 const player = usePlayerStore()
 const sidebarStore = useSidebarStore()
 
+const isDragging = ref(false)
+const isLyricsOpen = ref(false)
+
 // ========== 滚动溢出检测 ==========
 const nameWrapRef = ref(null)
 const artistWrapRef = ref(null)
@@ -53,6 +56,13 @@ watch(() => player.currentTrack, () => {
 onMounted(() => {
   checkOverflow()
   window.addEventListener('resize', refreshOverflow)
+  
+  // 监听歌词悬浮窗状态
+  if (window.electronAPI && window.electronAPI.onLyricsWindowStateChange) {
+    window.electronAPI.onLyricsWindowStateChange(isOpen => {
+      isLyricsOpen.value = isOpen
+    })
+  }
 })
 
 // ========== emit ==========
@@ -275,8 +285,6 @@ function nextTrack() {
 }
 
 // 进度条拖动
-const isDragging = ref(false)
-const dragProgress = ref(0)
 
 function seekTo(e) {
   if (!howl || !player.duration) return
@@ -469,6 +477,7 @@ onUnmounted(() => {
     <div class="foot-right">
       <button
         class="ctrl-btn lyrics-btn"
+        :class="{ active: isLyricsOpen }"
         @click="handleToggleLyrics"
         title="桌面歌词"
       >

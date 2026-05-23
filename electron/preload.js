@@ -213,6 +213,12 @@ ipcRenderer.on('on-lyrics-status-update', (event, data) => {
 })
 function onLyricsStatusUpdate(callback) { lyricsStatusCallback = callback }
 
+let lyricsWindowStateCallback = null
+ipcRenderer.on('lyrics-window-state', (event, isOpen) => {
+  if (lyricsWindowStateCallback) lyricsWindowStateCallback(isOpen)
+})
+function onLyricsWindowStateChange(callback) { lyricsWindowStateCallback = callback }
+
 // ========== 选择音频文件 ==========
 async function selectMusicFiles() {
   try {
@@ -262,6 +268,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleLyricsWindow,
   sendLyricsStatus,
   onLyricsStatusUpdate,
+  onLyricsWindowStateChange,
   // 选择文件
   selectMusicFiles,
   // 文件读取

@@ -231,6 +231,9 @@ function setupWindowControls() {
     } else {
       lyricsWindow.show()
     }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('lyrics-window-state', lyricsWindow.isVisible())
+    }
   })
 
   ipcMain.on('update-lyrics-status', (event, data) => {
