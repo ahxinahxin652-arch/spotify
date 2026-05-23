@@ -249,16 +249,16 @@ app.whenReady().then(async () => {
   // 3. 自动恢复：数据库为空时从已有文件夹重建
   await autoRecoverFromFiles()
 
-  // 3. 启动 Express 服务器
-  startExpressServer()
-
   // 4. 创建系统托盘
   createTray()
 
   // 5. 创建窗口
   createWindow()
 
-  // 6. 设置 IPC
+  // 6. 启动 Express 服务器 (此时 mainWindow 已经被创建)
+  startExpressServer()
+
+  // 7. 设置 IPC
   setupWindowControls()
 
   app.on('activate', () => {
