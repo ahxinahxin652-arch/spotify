@@ -420,6 +420,11 @@ async function updateFileMetadata(filePath, data) {
             }
           } catch (_) { /* 提取封面失败，保持原值 */ }
 
+          let artistsJson = undefined
+          if (data.artist !== undefined) {
+            artistsJson = await musicDao.buildArtistsJson(data.artist)
+          }
+
           await db.track.update({
             where: { id: track.id },
             data: {
@@ -427,6 +432,7 @@ async function updateFileMetadata(filePath, data) {
               artist: data.artist || track.artist,
               album: data.album || track.album,
               cover: newCover,
+              ...(artistsJson !== undefined && { artists: artistsJson }),
             }
           })
         }

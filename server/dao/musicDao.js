@@ -5,6 +5,7 @@ const {spawn} = require('child_process')
 const {getDb} = require('./db')
 const Track = require('../pojo/do/Track')
 const {WarehouseItemVO, ImportResultVO} = require('../pojo/vo/ResponseVOs')
+const artistDao = require('./artistDao')
 
 // ========== 常量 ==========
 const SUPPORTED_EXTENSIONS = ['.flac', '.mp3', '.ogg', '.wav', '.aac', '.m4a']
@@ -69,6 +70,36 @@ function parseFileName(fileName) {
         return {artist: parts[0].trim(), title: parts[1].trim()};
     }
     return {artist: '', title: nameWithoutExt};
+}
+
+/**
+ * 解析歌手字符串，确保数据库中存在这些歌手，并返回序列化后的 artists JSON 数组
+ * @param {string} artistStr
+ * @returns {Promise<string>}
+ */
+async function buildArtistsJson(artistStr) {
+    if (!artistStr || artistStr.trim() === '') {
+        return JSON.stringify([]);
+    }
+    
+    // 按照常见的分隔符切分歌手姓名
+    const artistNames = artistStr.split(/[,/;|&，、\/]/).map(name => name.trim()).filter(Boolean);
+    const boundArtists = [];
+    
+    for (const name of artistNames) {
+        try {
+            const artist = await artistDao.createArtistIfNotExist(name);
+            boundArtists.push({
+                id: artist.id,
+                name: artist.name,
+                role: 'Main Artist'
+            });
+        } catch (e) {
+            console.error(`[DB] Failed to create artist "${name}":`, e.message);
+        }
+    }
+    
+    return JSON.stringify(boundArtists);
 }
 
 // ========== 音乐仓库 DAO ==========
@@ -555,6 +586,7 @@ async function importFilesToWarehouseById(libraryId, filePaths) {
                 }
 
                 // 存入 SQLite 数据库
+                trackData.artists = await buildArtistsJson(trackData.artist);
                 await db.track.create({data: trackData});
 
                 imported.push(finalPath);
@@ -644,6 +676,7 @@ async function syncWarehouseById(libraryId) {
                 trackData.cover = meta.cover || ''
             }
 
+            trackData.artists = await buildArtistsJson(trackData.artist)
             await db.track.create({data: trackData})
             added++
         } catch (e) {
@@ -699,12 +732,20 @@ async function deleteWarehouseById(libraryId) {
 async function updateTrack(id, data) {
     const db = getDb()
     try {
+        let artistsJson = undefined
+        if (data.artists !== undefined) {
+            artistsJson = typeof data.artists === 'string' ? data.artists : JSON.stringify(data.artists)
+        } else if (data.artist !== undefined) {
+            artistsJson = await buildArtistsJson(data.artist)
+        }
+
         const track = await db.track.update({
             where: {id},
             data: {
                 ...(data.title !== undefined && {title: data.title}),
                 ...(data.artist !== undefined && {artist: data.artist}),
                 ...(data.album !== undefined && {album: data.album}),
+                ...(artistsJson !== undefined && {artists: artistsJson}),
             },
         })
         return {success: true, track}
@@ -753,4 +794,5 @@ module.exports = {
     resolveTrackById,
     updateTrack,
     deleteTrack,
+    buildArtistsJson,
 }
