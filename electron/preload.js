@@ -85,6 +85,15 @@ function updateFileMetadata(data) {
   return apiFetch('/api/music/metadata', { method: 'POST', body: data })
 }
 
+// ========== 歌手 API ==========
+function getArtistById(artistId) {
+  return apiFetch(`/api/music/artists/${encodeURIComponent(artistId)}`)
+}
+
+function updateArtist(artistId, updates) {
+  return apiFetch(`/api/music/artists/${encodeURIComponent(artistId)}`, { method: 'PUT', body: updates })
+}
+
 // ========== 格式转换 API ==========
 
 /** @returns {Promise<{ success: boolean, data?: { files: Array<{name: string, path: string, size: number}> }, error?: string }>} */
@@ -246,6 +255,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteTrack,
   getFileMetadata,
   updateFileMetadata,
+  // 歌手 API
+  getArtistById,
+  updateArtist,
   // 格式转换
   scanFiles,
   startConvert,

@@ -126,6 +126,17 @@
     display: none;
 }
 
+.artist-link {
+    cursor: pointer;
+    transition: color 0.2s, opacity 0.2s;
+}
+
+.artist-link:hover {
+    color: var(--accent);
+    opacity: 1;
+    text-decoration: underline;
+}
+
 .track-artist-inner.scrolling .track-artist-clone {
     display: inline;
 }

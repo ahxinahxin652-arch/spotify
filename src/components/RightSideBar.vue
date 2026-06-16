@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { usePlayerStore } from '../stores/player.js'
 import { useLocalStorageStore } from '../stores/localStorage.js'
 import { useSidebarStore } from '../stores/sidebar.js'
@@ -6,13 +8,31 @@ import { useSidebarStore } from '../stores/sidebar.js'
 const player = usePlayerStore()
 const localStorageStore = useLocalStorageStore()
 const sidebarStore = useSidebarStore()
+const router = useRouter()
 
 function closeSidebar() {
   sidebarStore.setOpen(false)
   localStorageStore.setRightBarShow(false)
 }
 
+const parsedArtists = computed(() => {
+  if (!player.currentTrack) return []
+  if (!player.currentTrack.artists) return []
+  try {
+    const list = typeof player.currentTrack.artists === 'string'
+      ? JSON.parse(player.currentTrack.artists)
+      : player.currentTrack.artists
+    return Array.isArray(list) ? list : []
+  } catch (e) {
+    return []
+  }
+})
 
+function goToArtist(artistId) {
+  if (artistId) {
+    router.push(`/artist/${artistId}`)
+  }
+}
 
 const trackInfo = () => {
   if (!player.currentTrack) {
@@ -60,7 +80,15 @@ const trackInfo = () => {
           {{ trackInfo().title }}
         </span>
         <span class="track-artist" v-if="trackInfo().artist">
-          {{ trackInfo().artist }}
+          <template v-if="parsedArtists.length > 0">
+            <span v-for="(art, idx) in parsedArtists" :key="art.id">
+              <span class="artist-link" @click.stop="goToArtist(art.id)">{{ art.name }}</span>
+              <span v-if="idx < parsedArtists.length - 1">, </span>
+            </span>
+          </template>
+          <template v-else>
+            {{ trackInfo().artist }}
+          </template>
         </span>
         <span class="track-artist empty" v-else-if="player.currentTrack">
           {{ player.currentTrack.warehouse || '未知来源' }}
