@@ -114,6 +114,28 @@ async function autoMigrate() {
     CREATE INDEX IF NOT EXISTS "tracks_libraryId_idx" ON "tracks"("libraryId")
   `)
 
+  // Add Artist table migration
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "artists" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "name" TEXT NOT NULL,
+      "cover_img" TEXT,
+      "metadata" TEXT
+    )
+  `)
+  await db.$executeRawUnsafe(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "artists_name_key" ON "artists"("name")
+  `)
+
+  // Add artists column to tracks table
+  try {
+    await db.$executeRawUnsafe(`ALTER TABLE "tracks" ADD COLUMN "artists" TEXT`)
+  } catch (e) {
+    if (!e.message || !e.message.includes('duplicate column name')) {
+      console.warn('[DB Warning] Failed to add artists column to tracks:', e.message)
+    }
+  }
+
   // 记录 migration 版本
   await db.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
