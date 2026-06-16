@@ -88,5 +88,17 @@ module.exports = function(mainWindow) {
     res.json(await musicService.updateFileMetadata(req.body.path, req.body))
   })
 
+  // 获取歌手信息
+  router.get('/artists/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.getArtistById(decodeURIComponent(id)))
+  })
+
+  // 更新歌手信息
+  router.put('/artists/:id', async (req, res) => {
+    const { id } = req.params
+    res.json(await musicService.updateArtist(decodeURIComponent(id), req.body))
+  })
+
   return router
 }

@@ -135,6 +135,7 @@ exports.Prisma.TrackScalarFieldEnum = {
   name: 'name',
   title: 'title',
   artist: 'artist',
+  artists: 'artists',
   album: 'album',
   cover: 'cover',
   duration: 'duration',
@@ -145,6 +146,13 @@ exports.Prisma.TrackScalarFieldEnum = {
   isEncrypted: 'isEncrypted',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ArtistScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  coverImg: 'coverImg',
+  metadata: 'metadata'
 };
 
 exports.Prisma.SortOrder = {
@@ -160,7 +168,8 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   MusicLibrary: 'MusicLibrary',
-  Track: 'Track'
+  Track: 'Track',
+  Artist: 'Artist'
 };
 
 /**

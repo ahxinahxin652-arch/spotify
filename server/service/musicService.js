@@ -1,4 +1,5 @@
 const musicDao = require('../dao/musicDao')
+const artistDao = require('../dao/artistDao')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -439,6 +440,40 @@ async function updateFileMetadata(filePath, data) {
   })
 }
 
+/**
+ * 根据 ID 获取歌手信息
+ * // TODO: 后续歌手管理对接服务端接口
+ * @param {string} id
+ * @returns {Promise<ApiResult>}
+ */
+async function getArtistById(id) {
+  try {
+    const artist = await artistDao.getArtistById(id)
+    if (!artist) {
+      return ApiResult.fail('歌手不存在')
+    }
+    return ApiResult.ok({ artist })
+  } catch (err) {
+    return ApiResult.fail(err.message)
+  }
+}
+
+/**
+ * 更新歌手信息
+ * // TODO: 后续歌手管理对接服务端接口
+ * @param {string} id
+ * @param {Object} updates
+ * @returns {Promise<ApiResult>}
+ */
+async function updateArtist(id, updates) {
+  try {
+    const artist = await artistDao.updateArtist(id, updates)
+    return ApiResult.ok({ artist })
+  } catch (err) {
+    return ApiResult.fail(err.message)
+  }
+}
+
 module.exports = {
   getMusicWarehouses,
   createMusicWarehouse,
@@ -453,5 +488,8 @@ module.exports = {
   updateTrack,
   deleteTrack,
   getFileMetadata,
-  updateFileMetadata
+  updateFileMetadata,
+  getArtistById,
+  updateArtist
 }
+
