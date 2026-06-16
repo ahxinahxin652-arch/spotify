@@ -97,13 +97,6 @@ function goBack() {
 
 <template>
   <div class="main-lyrics-view">
-    <!-- 头部背景模糊，用于展示曲目信息 -->
-    <div class="lyrics-header">
-      <div class="lyrics-track-info" v-if="player.currentTrack">
-        <span class="l-track-title">{{ player.currentTrack.title || player.currentTrack.name }}</span>
-        <span class="l-track-artist">{{ player.currentTrack.artist }}</span>
-      </div>
-    </div>
 
     <!-- 滚动歌词容器 -->
     <div class="lyrics-scroll-container" ref="lyricsContainerRef">

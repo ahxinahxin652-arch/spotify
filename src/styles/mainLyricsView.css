@@ -11,74 +11,40 @@
     user-select: none;
 }
 
-.lyrics-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 24px 32px;
-    z-index: 10;
-    background: linear-gradient(180deg, rgba(24, 28, 36, 0.9) 0%, rgba(24, 28, 36, 0) 100%);
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-}
-
-.back-circle-btn {
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    color: #e0e0e0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s, transform 0.1s;
-}
-
-.back-circle-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    transform: scale(1.05);
-}
-
-.lyrics-track-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.l-track-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.l-track-artist {
-    font-size: 13px;
-    color: #b3b3b3;
-}
-
 /* 滚动歌词主体 */
 .lyrics-scroll-container {
     flex: 1;
     overflow-y: auto;
+    overflow-y: overlay;
     padding: 0 40px;
     scroll-behavior: smooth;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-width: thin;
 }
 
 .lyrics-scroll-container::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    width: 6px;
+}
+
+.lyrics-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.lyrics-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
+.lyrics-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .lyrics-list-wrapper {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding-top: 80px; /* Leave space for absolute header */
+    padding-top: 15px;
+    padding-bottom: 20px;
     padding-left: 10%;
     padding-right: 10%;
 }
