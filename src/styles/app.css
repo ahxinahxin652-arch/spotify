@@ -70,14 +70,13 @@ body {
 
 /* ========== 自定义标题栏 ========== */
 .titlebar {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding: 10px 16px;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: var(--titlebar-h);
-    background: #111215;
+    background: #07080a;
     flex-shrink: 0;
     -webkit-app-region: drag;
     user-select: none;
@@ -94,17 +93,28 @@ body {
 }
 
 .traffic-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     border: none;
     border-radius: 50%;
-    background: #3a3a3c;
+    background: transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 8px;
+    margin-right: 6px;
     transition: background 0.15s, transform 0.1s;
+}
+
+.traffic-btn svg path,
+.traffic-btn svg rect {
+    stroke: #ffffff !important;
+    transition: stroke 0.15s;
+}
+
+.traffic-btn:hover svg path,
+.traffic-btn:hover svg rect {
+    stroke: rgba(0, 0, 0, 0.6) !important;
 }
 
 .traffic-btn:last-child {
@@ -112,7 +122,6 @@ body {
 }
 
 .traffic-btn:hover {
-    background: #555;
     transform: scale(1.1);
 }
 
@@ -285,24 +294,25 @@ body {
 }
 
 .user-avatar-btn {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: #1f1f1f;
-    color: #b3b3b3;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color 0.2s, color 0.2s, transform 0.1s;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .user-avatar-btn:hover {
     background: #2a2a2a;
     color: #ffffff;
-    transform: scale(1.04);
-    border-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+    border-color: #ffffff;
 }
 
 /* ========== Element Plus 下拉菜单暗黑主题自定义 ========== */

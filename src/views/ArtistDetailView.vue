@@ -505,7 +505,9 @@ const formatPlayCount = (num) => {
 /* Widescreen Banner */
 .artist-banner {
   position: relative;
-  height: 380px;
+  height: 38vh;
+  min-height: 280px;
+  max-height: 480px;
   background-color: #242424;
   display: flex;
   flex-direction: column;
