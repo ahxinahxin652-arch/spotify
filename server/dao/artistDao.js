@@ -8,9 +8,29 @@ const { getDb } = require('./db')
  */
 async function getArtistById(id) {
   const db = getDb()
-  return await db.artist.findUnique({
+  const artist = await db.artist.findUnique({
     where: { id }
   })
+  if (!artist) {
+    return null
+  }
+  
+  // 查询关联此歌手 ID 的曲目
+  const tracks = await db.track.findMany({
+    where: {
+      artists: {
+        contains: id
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+  
+  return {
+    ...artist,
+    tracks
+  }
 }
 
 /**

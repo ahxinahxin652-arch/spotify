@@ -1,10 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { usePlayerStore } from '../stores/player.js'
 
 const route = useRoute()
 const router = useRouter()
+const player = usePlayerStore()
 
 const artistId = computed(() => route.params.id)
 const artistInfo = ref({
@@ -18,6 +20,9 @@ const artistInfo = ref({
   }
 })
 
+// 关联真实歌曲
+const realTracks = ref([])
+
 // 编辑状态
 const showEditDialog = ref(false)
 const editName = ref('')
@@ -28,14 +33,15 @@ const editCoverImg = ref('')
 const editLoading = ref(false)
 
 const coverInputRef = ref(null)
+const isFollowed = ref(false)
 
-// 歌曲模拟数据
+// 歌曲模拟数据（当数据库中无关联歌曲时的兜底显示）
 const mockTracks = ref([
-  { id: 'mock-1', title: '夜曲 (Nocturne)', album: '十一月的萧邦', duration: 226, playCount: '4.2M' },
-  { id: 'mock-2', title: '晴天 (Sunny Day)', album: '叶惠美', duration: 269, playCount: '6.1M' },
-  { id: 'mock-3', title: '七里香 (Common Jasmin Orange)', album: '七里香', duration: 283, playCount: '5.8M' },
-  { id: 'mock-4', title: '青花瓷 (Blue and White Porcelain)', album: '我很忙', duration: 239, playCount: '3.9M' },
-  { id: 'mock-5', title: '稻香 (Rice Field)', album: '魔杰座', duration: 283, playCount: '4.7M' }
+  { id: 'mock-1', title: '夜曲 (Nocturne)', album: '十一月的萧邦', duration: 226, playCount: 4212567, cover: '' },
+  { id: 'mock-2', title: '晴天 (Sunny Day)', album: '叶惠美', duration: 269, playCount: 6108493, cover: '' },
+  { id: 'mock-3', title: '七里香 (Common Jasmin Orange)', album: '七里香', duration: 283, playCount: 5891048, cover: '' },
+  { id: 'mock-4', title: '青花瓷 (Blue and White Porcelain)', album: '我很忙', duration: 239, playCount: 3940182, cover: '' },
+  { id: 'mock-5', title: '稻香 (Rice Field)', album: '魔杰座', duration: 283, playCount: 4761928, cover: '' }
 ])
 
 onMounted(async () => {
@@ -58,6 +64,7 @@ const loadArtistData = async () => {
         coverImg: artist.coverImg || '',
         metadata: artist.metadata ? JSON.parse(artist.metadata) : { birthPlace: '', description: '', links: [] }
       }
+      realTracks.value = artist.tracks || []
     } else {
       ElMessage.error('歌手加载失败: ' + (result.message || '未知错误'))
     }
@@ -71,6 +78,80 @@ const goBack = () => {
   router.back()
 }
 
+// 模拟月收听人数 (根据歌手名字哈希生成稳定的数量，更逼真)
+const monthlyListeners = computed(() => {
+  if (!artistInfo.value.name) return '0'
+  let hash = 0
+  for (let i = 0; i < artistInfo.value.name.length; i++) {
+    hash = artistInfo.value.name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const seed = Math.abs(hash)
+  const count = (seed % 2456128) + 1200000 // 1.2M - 3.6M
+  return count.toLocaleString()
+})
+
+// 最终展示的歌曲列表
+const displayTracks = computed(() => {
+  return realTracks.value.length > 0 ? realTracks.value : mockTracks.value
+})
+
+// 当前歌手是否有歌正在播放
+const isArtistPlaying = computed(() => {
+  if (!player.currentTrack || !player.isPlaying) return false
+  return displayTracks.value.some(t => t.id === player.currentTrack.id)
+})
+
+// 播放整首歌手歌曲
+const playArtistTracks = () => {
+  if (displayTracks.value.length === 0) return
+  const firstTrack = displayTracks.value[0]
+  const playEvent = new CustomEvent('play-track', {
+    detail: {
+      track: firstTrack,
+      playlist: displayTracks.value,
+      index: 0
+    }
+  })
+  window.dispatchEvent(playEvent)
+}
+
+// 播放控制
+const togglePlayArtist = () => {
+  if (displayTracks.value.length === 0) return
+  if (isArtistPlaying.value) {
+    const toggleEvent = new CustomEvent('toggle-play')
+    window.dispatchEvent(toggleEvent)
+  } else {
+    playArtistTracks()
+  }
+}
+
+// 播放单首歌曲
+const playIndividualTrack = (track, index) => {
+  if (player.currentTrack && player.currentTrack.id === track.id) {
+    const toggleEvent = new CustomEvent('toggle-play')
+    window.dispatchEvent(toggleEvent)
+  } else {
+    const playEvent = new CustomEvent('play-track', {
+      detail: {
+        track,
+        playlist: displayTracks.value,
+        index
+      }
+    })
+    window.dispatchEvent(playEvent)
+  }
+}
+
+const isTrackActive = (trackId) => {
+  return player.currentTrack && player.currentTrack.id === trackId
+}
+
+const isTrackPlaying = (trackId) => {
+  return isTrackActive(trackId) && player.isPlaying
+}
+
+// 编辑弹窗操作
 const openEditDialog = () => {
   editName.value = artistInfo.value.name
   editBirthPlace.value = artistInfo.value.metadata.birthPlace || ''
@@ -93,7 +174,7 @@ const handleCoverUpload = async (e) => {
     return
   }
   try {
-    const base64 = await resizeImage(file, 600)
+    const base64 = await resizeImage(file, 1920) // 提升至 1920 高清大小
     editCoverImg.value = base64
   } catch (err) {
     ElMessage.error('图片处理失败: ' + err.message)
@@ -123,7 +204,7 @@ const resizeImage = (file, maxPx) => {
         canvas.height = targetH
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0, targetW, targetH)
-        resolve(canvas.toDataURL('image/jpeg', 0.85))
+        resolve(canvas.toDataURL('image/jpeg', 0.9)) // 提升压缩质量至 0.90
       }
       img.onerror = () => reject(new Error('图片加载错误'))
       img.src = ev.target.result
@@ -169,121 +250,195 @@ const handleSaveEdit = async () => {
 }
 
 const formatDuration = (seconds) => {
+  if (!seconds || isNaN(seconds)) return '0:00'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
+}
+
+const formatPlayCount = (num) => {
+  if (!num) return '0'
+  return num.toLocaleString()
 }
 </script>
 
 <template>
   <div class="artist-detail">
-    <!-- 头部横幅区 -->
-    <div class="artist-header">
+    <!-- Widescreen Banner Section -->
+    <div class="artist-banner">
+      <!-- 模糊背景层 -->
+      <div 
+        class="banner-blur-bg" 
+        :style="artistInfo.coverImg ? { backgroundImage: `url(${artistInfo.coverImg})` } : {}"
+      ></div>
+      <!-- 居中的清晰图片层 -->
+      <div 
+        class="banner-sharp-img" 
+        :style="artistInfo.coverImg ? { backgroundImage: `url(${artistInfo.coverImg})` } : {}"
+      ></div>
+      
+      <!-- 返回按钮 -->
       <button class="back-btn" @click="goBack">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
-        返回
       </button>
-      
-      <div class="artist-profile">
-        <div class="avatar-container" @click="openEditDialog">
-          <img v-if="artistInfo.coverImg" :src="artistInfo.coverImg" class="artist-avatar" alt="avatar" />
-          <div v-else class="avatar-placeholder">
-            <span>{{ artistInfo.name ? artistInfo.name.charAt(0).toUpperCase() : '?' }}</span>
-          </div>
-          <div class="avatar-overlay">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-          </div>
-        </div>
-        
-        <div class="artist-meta">
-          <div class="artist-type">艺人 / 歌手</div>
-          <h1 class="artist-name">{{ artistInfo.name }}</h1>
-          
-          <div class="artist-extra">
-            <span v-if="artistInfo.metadata.birthPlace" class="meta-item">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              {{ artistInfo.metadata.birthPlace }}
-            </span>
-          </div>
-          
-          <p class="artist-desc">{{ artistInfo.metadata.description || '暂无歌手介绍。' }}</p>
-          
-          <div v-if="artistInfo.metadata.links && artistInfo.metadata.links.length > 0" class="artist-links">
-            <a v-for="(link, i) in artistInfo.metadata.links" :key="i" :href="link" target="_blank" class="artist-link">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-              </svg>
-              {{ link.replace(/^https?:\/\/(www\.)?/, '') }}
-            </a>
-          </div>
-        </div>
-      </div>
-      
-      <div class="header-actions">
-        <button class="edit-profile-btn" @click="openEditDialog">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 20h9"></path>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+
+      <div class="artist-banner-content">
+        <div class="verified-row">
+          <svg class="verified-badge" width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#3d91ff"/>
           </svg>
-          编辑资料
-        </button>
+          <span class="verified-text">Verified Artist</span>
+        </div>
+        <h1 class="artist-banner-name">{{ artistInfo.name }}</h1>
+        <span class="listeners-count">{{ monthlyListeners }} monthly listeners</span>
       </div>
     </div>
-    
-    <!-- 内容展示区 -->
-    <div class="artist-content">
-      <div class="section-title">热门歌曲</div>
-      
-      <div class="tracks-list">
-        <div class="list-header">
-          <div class="col-num">#</div>
-          <div class="col-title">标题</div>
-          <div class="col-album">专辑</div>
-          <div class="col-playcount">播放量</div>
-          <div class="col-time">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
-        </div>
-        
-        <div class="list-body">
-          <div v-for="(track, index) in mockTracks" :key="track.id" class="track-row">
-            <div class="col-num">{{ index + 1 }}</div>
-            <div class="col-title">
-              <div class="track-info-cell">
-                <span class="track-name">{{ track.title }}</span>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <!-- Play green circle button -->
+      <button class="circle-play-btn" @click="togglePlayArtist" title="播放/暂停">
+        <svg v-if="!isArtistPlaying" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="8 5 19 12 8 19 8 5"/>
+        </svg>
+        <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16"/>
+          <rect x="14" y="4" width="4" height="16"/>
+        </svg>
+      </button>
+
+      <!-- Shuffle toggle button -->
+      <button 
+        class="shuffle-toggle" 
+        :class="{ active: player.shuffle }" 
+        @click="player.toggleShuffle()"
+        title="随机播放"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 3 21 3 21 8"/>
+          <line x1="4" y1="20" x2="21" y2="3"/>
+          <polyline points="21 16 21 21 16 21"/>
+          <line x1="15" y1="15" x2="21" y2="21"/>
+          <line x1="4" y1="4" x2="9" y2="9"/>
+        </svg>
+      </button>
+
+      <!-- Follow button -->
+      <button 
+        class="follow-btn-outline" 
+        :class="{ active: isFollowed }" 
+        @click="isFollowed = !isFollowed"
+      >
+        {{ isFollowed ? 'Following' : 'Follow' }}
+      </button>
+
+      <!-- Edit bio button -->
+      <button class="edit-bio-btn-outline" @click="openEditDialog">
+        Edit Profile
+      </button>
+
+      <!-- More options ellipsis -->
+      <el-dropdown trigger="click" @command="(cmd) => cmd === 'edit' ? openEditDialog() : null">
+        <button class="options-ellipsis">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="19" cy="12" r="2"/>
+          </svg>
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu class="dark-dropdown">
+            <el-dropdown-item command="edit">编辑歌手资料</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </div>
+
+    <!-- Main Content Layout (1 Column, About section removed) -->
+    <div class="artist-grid">
+      <!-- Popular Tracks -->
+      <div class="popular-tracks-section">
+        <h2 class="section-title">Popular</h2>
+        <div class="tracks-table">
+          <div 
+            v-for="(track, index) in displayTracks" 
+            :key="track.id" 
+            class="track-row-item"
+            :class="{ active: isTrackActive(track.id) }"
+            @click="playIndividualTrack(track, index)"
+          >
+            <!-- Column 1: Index / Play-Pause Icon -->
+            <div class="col-num-cell">
+              <span class="index-num" v-show="!isTrackPlaying(track.id)">{{ index + 1 }}</span>
+              <span class="active-equalizer" v-show="isTrackPlaying(track.id)">
+                <span class="bar bar-1"></span>
+                <span class="bar bar-2"></span>
+                <span class="bar bar-3"></span>
+              </span>
+              <button class="row-play-btn">
+                <svg v-if="!isTrackPlaying(track.id)" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="6 4 20 12 6 20 6 4"/>
+                </svg>
+                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="5" y="4" width="4" height="16"/>
+                  <rect x="15" y="4" width="4" height="16"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Column 2: Cover image thumbnail -->
+            <div class="col-cover-cell">
+              <div class="track-thumbnail">
+                <img v-if="track.cover" :src="track.cover" class="track-thumbnail-img" alt="" />
+                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M9 18V5l12-2v13"/>
+                  <circle cx="6" cy="18" r="3"/>
+                  <circle cx="18" cy="16" r="3"/>
+                </svg>
               </div>
             </div>
-            <div class="col-album">{{ track.album }}</div>
-            <div class="col-playcount">{{ track.playCount }}</div>
-            <div class="col-time">{{ formatDuration(track.duration) }}</div>
+
+            <!-- Column 3: Song name and optional tag -->
+            <div class="col-title-cell">
+              <span class="track-row-title" :class="{ green: isTrackActive(track.id) }">
+                {{ track.title || track.name }}
+              </span>
+            </div>
+
+            <!-- Column 4: Play count -->
+            <div class="col-playcount-cell">
+              {{ formatPlayCount(track.playCount || Math.floor((track.title || '').length * 84218 + (index * 456721) + 204910)) }}
+            </div>
+
+            <!-- Column 5: Status indicator -->
+            <div class="col-status-cell">
+              <svg v-if="isTrackActive(track.id)" class="status-checkmark" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#1db954"/>
+              </svg>
+            </div>
+
+            <!-- Column 6: Duration -->
+            <div class="col-time-cell">
+              {{ formatDuration(track.duration) }}
+            </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- 编辑歌手资料弹窗 -->
+
+    <!-- 编辑歌手资料弹窗 (Element Plus) -->
     <el-dialog
       v-model="showEditDialog"
-      title="编辑歌手资料"
+      title="Edit Profile"
       width="460px"
       :close-on-click-modal="false"
       class="custom-dialog"
     >
       <div class="edit-dialog-content">
-        <!-- 头像上传 -->
+        <!-- 表单头像上传 -->
         <div class="edit-avatar-upload" @click="triggerCoverInput">
           <img v-if="editCoverImg" :src="editCoverImg" class="upload-avatar" alt="avatar" />
           <div v-else class="upload-placeholder">
@@ -292,7 +447,7 @@ const formatDuration = (seconds) => {
               <circle cx="8.5" cy="8.5" r="1.5"></circle>
               <polyline points="21 15 16 10 5 21"></polyline>
             </svg>
-            <span>点击上传头像</span>
+            <span>点击上传歌手图片</span>
           </div>
           <input
             type="file"
@@ -310,16 +465,16 @@ const formatDuration = (seconds) => {
             <input type="text" v-model="editName" placeholder="输入歌手姓名" />
           </div>
           <div class="form-item">
-            <label>出生地 / 国家</label>
-            <input type="text" v-model="editBirthPlace" placeholder="例如：台湾台北 / 中国" />
+            <label>国家 / 地区</label>
+            <input type="text" v-model="editBirthPlace" placeholder="例如：日本神户 / 台湾台北" />
           </div>
           <div class="form-item">
-            <label>个人账号 / 链接 (每行一个)</label>
-            <textarea v-model="editLinks" rows="3" placeholder="例如：https://instagram.com/jaychou"></textarea>
+            <label>主页 / 链接 (每行一个)</label>
+            <textarea v-model="editLinks" rows="2" placeholder="例如：https://sim.music/"></textarea>
           </div>
           <div class="form-item">
-            <label>歌手简介</label>
-            <textarea v-model="editDescription" rows="4" placeholder="输入歌手的生平、主要成就或个人介绍..."></textarea>
+            <label>歌手简介 / Bio</label>
+            <textarea v-model="editDescription" rows="4" placeholder="输入歌手介绍..."></textarea>
           </div>
         </div>
       </div>
@@ -338,263 +493,383 @@ const formatDuration = (seconds) => {
 
 <style scoped>
 .artist-detail {
-  padding: 24px 32px;
-  background: var(--bg);
+  padding: 0 0 40px;
+  background: #121212;
   min-height: 100%;
-  color: var(--text);
+  color: #b3b3b3;
   font-family: var(--font);
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
-/* 头部区 */
-.artist-header {
+/* Widescreen Banner */
+.artist-banner {
   position: relative;
+  height: 380px;
+  background-color: #242424;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid var(--border);
-}
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  width: fit-content;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background: var(--surface-2);
-  color: var(--text-h);
-  border-color: var(--text);
-}
-
-.artist-profile {
-  display: flex;
-  gap: 28px;
-  align-items: flex-start;
-}
-
-.avatar-container {
-  position: relative;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
+  justify-content: flex-end;
+  padding: 24px 32px 32px;
   overflow: hidden;
-  border: 2px solid var(--border);
-  cursor: pointer;
-  flex-shrink: 0;
 }
 
-.artist-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background: var(--surface-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.avatar-overlay {
+.banner-blur-bg {
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(35px) brightness(0.4);
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.banner-sharp-img {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  bottom: 0;
   width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  max-width: 800px;
+  transform: translateX(-50%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 2;
+}
+
+.artist-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.1) 30%, rgba(18, 18, 18, 0.95));
+  z-index: 3;
+}
+
+.back-btn {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
 }
 
-.avatar-container:hover .avatar-overlay {
-  opacity: 1;
-}
-
-.avatar-container:hover .artist-avatar {
+.back-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
   transform: scale(1.05);
 }
 
-.artist-meta {
-  flex: 1;
+.artist-banner-content {
+  position: relative;
+  z-index: 4;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
-.artist-type {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.artist-name {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--text-h);
-  margin: 0;
-}
-
-.artist-extra {
+.verified-row {
   display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--text);
+  align-items: center;
+  gap: 8px;
+}
+
+.verified-badge {
+  flex-shrink: 0;
+}
+
+.verified-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.artist-banner-name {
+  font-size: 80px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.listeners-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
   margin-top: 4px;
 }
 
-.meta-item {
+/* Controls Bar */
+.controls-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 24px;
+  padding: 24px 32px;
+  background: linear-gradient(rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
-.artist-desc {
-  font-size: 13px;
-  line-height: 1.6;
-  margin: 10px 0 0 0;
-  max-width: 680px;
-  color: var(--text);
-}
-
-.artist-links {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-
-.artist-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--accent);
-  text-decoration: none;
-  background: var(--accent-dim);
-  padding: 4px 10px;
-  border-radius: 20px;
-  transition: opacity 0.2s;
-}
-
-.artist-link:hover {
-  opacity: 0.8;
-}
-
-.edit-profile-btn {
-  position: absolute;
-  right: 0;
-  bottom: 32px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--accent);
+.circle-play-btn {
+  width: 56px;
+  height: 56px;
+  background: #1db954;
   border: none;
-  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.circle-play-btn:hover {
+  background: #1ed760;
+  transform: scale(1.05);
+}
+
+.circle-play-btn:active {
+  transform: scale(0.98);
+}
+
+.shuffle-toggle {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.shuffle-toggle:hover {
+  color: #ffffff;
+}
+
+.shuffle-toggle.active {
+  color: #1db954;
+}
+
+.follow-btn-outline,
+.edit-bio-btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
   font-size: 12px;
-  font-weight: 600;
-  padding: 8px 16px;
+  font-weight: 700;
+  padding: 7px 18px;
   border-radius: 20px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.edit-profile-btn:hover {
-  background: var(--accent-hover);
+.follow-btn-outline:hover,
+.edit-bio-btn-outline:hover {
+  border-color: #ffffff;
+  transform: scale(1.04);
 }
 
-/* 内容展示区 */
-.artist-content {
-  padding-top: 28px;
+.follow-btn-outline.active {
+  border-color: #1db954;
+  color: #1db954;
+}
+
+.options-ellipsis {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.options-ellipsis:hover {
+  color: #ffffff;
+}
+
+/* Layout (Now 100% full width, About card removed) */
+.artist-grid {
+  display: block;
+  padding: 16px 32px 32px;
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
-  color: var(--text-h);
-  margin-bottom: 16px;
+  color: #ffffff;
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
-/* 歌曲列表 */
-.tracks-list {
+/* Tracks Table */
+.tracks-table {
   display: flex;
   flex-direction: column;
 }
 
-.list-header, .track-row {
+.track-row-item {
   display: grid;
-  grid-template-columns: 48px 1fr 1fr 120px 60px;
+  grid-template-columns: 40px 48px 1fr 1fr 40px 60px;
   align-items: center;
-  padding: 10px 16px;
+  height: 56px;
+  padding: 0 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  cursor: pointer;
 }
 
-.list-header {
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+.track-row-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.track-row-item:hover .index-num,
+.track-row-item:hover .active-equalizer {
+  display: none;
+}
+
+.track-row-item:hover .row-play-btn {
+  display: flex;
+}
+
+.track-row-item.active {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.col-num-cell {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  color: #b3b3b3;
+}
+
+.row-play-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Active Equalizer animation */
+.active-equalizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 14px;
+  height: 14px;
+}
+
+.active-equalizer .bar {
+  width: 2px;
+  height: 100%;
+  background-color: #1db954;
+  animation: bounce-equalizer 0.8s ease-in-out infinite alternate;
+  transform-origin: bottom;
+}
+
+.active-equalizer .bar-1 { animation-delay: 0.1s; }
+.active-equalizer .bar-2 { animation-delay: 0.4s; }
+.active-equalizer .bar-3 { animation-delay: 0.2s; }
+
+@keyframes bounce-equalizer {
+  0% { transform: scaleY(0.2); }
+  100% { transform: scaleY(1); }
+}
+
+.col-cover-cell {
+  display: flex;
+  align-items: center;
+}
+
+.track-thumbnail {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background-color: #282828;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #b3b3b3;
+}
+
+.track-thumbnail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.col-title-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 16px;
+}
+
+.track-row-title {
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text);
-  opacity: 0.7;
+  color: #ffffff;
 }
 
-.track-row {
-  border-radius: 8px;
-  margin-top: 4px;
+.track-row-title.green {
+  color: #1db954;
+}
+
+.track-row-item:hover .track-row-title {
+  color: #ffffff;
+}
+
+.col-playcount-cell {
   font-size: 13px;
-  color: var(--text);
-  transition: background 0.2s;
+  color: #b3b3b3;
 }
 
-.track-row:hover {
-  background: var(--surface);
-  color: var(--text-h);
+.col-status-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.col-num {
-  text-align: center;
+.status-checkmark {
+  flex-shrink: 0;
 }
 
-.col-time {
+.col-time-cell {
+  font-size: 13px;
+  font-family: var(--mono);
+  color: #b3b3b3;
   text-align: right;
   padding-right: 8px;
 }
 
-.track-info-cell {
-  display: flex;
-  flex-direction: column;
-}
-
-.track-name {
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-/* 弹窗样式定义 */
+/* Modal form adjustments */
 .edit-dialog-content {
   display: flex;
   flex-direction: column;
@@ -606,7 +881,7 @@ const formatDuration = (seconds) => {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  border: 2px dashed var(--border);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -615,11 +890,12 @@ const formatDuration = (seconds) => {
   overflow: hidden;
   margin: 0 auto;
   gap: 4px;
+  background-color: rgba(255, 255, 255, 0.03);
   transition: border-color 0.2s;
 }
 
 .edit-avatar-upload:hover {
-  border-color: var(--accent);
+  border-color: #1db954;
 }
 
 .upload-avatar {
@@ -634,7 +910,7 @@ const formatDuration = (seconds) => {
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: var(--text);
+  color: #b3b3b3;
 }
 
 .edit-form {
@@ -651,17 +927,17 @@ const formatDuration = (seconds) => {
 
 .form-item label {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-h);
+  font-weight: 700;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .form-item input, .form-item textarea {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: #282828;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  color: var(--text-h);
+  color: #ffffff;
   font-size: 13px;
   padding: 8px 12px;
   font-family: var(--font);
@@ -669,58 +945,73 @@ const formatDuration = (seconds) => {
 }
 
 .form-item input:focus, .form-item textarea:focus {
-  border-color: var(--accent);
+  border-color: #1db954;
   outline: none;
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
 .cancel-btn, .save-btn {
-  padding: 8px 16px;
+  padding: 8px 20px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
 }
 
 .cancel-btn {
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 
 .cancel-btn:hover {
-  background: var(--surface);
+  border-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .save-btn {
-  background: var(--accent);
+  background: #1db954;
   border: none;
-  color: #fff;
+  color: #000000;
 }
 
 .save-btn:hover {
-  background: var(--accent-hover);
+  background: #1ed760;
+  transform: scale(1.03);
 }
 
 :deep(.el-dialog) {
-  background: var(--surface-2) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
+  background: #181818 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
 }
 
 :deep(.el-dialog__title) {
-  color: var(--text-h) !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
 }
 
 :deep(.el-dialog__body) {
   padding: 16px 20px !important;
+}
+
+.dark-dropdown {
+  background-color: #282828 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark-dropdown :deep(.el-dropdown-menu__item) {
+  color: #ffffff !important;
+}
+
+.dark-dropdown :deep(.el-dropdown-menu__item:hover) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 </style>

@@ -14,7 +14,7 @@
 .foot-left {
     flex: 1;
     min-width: 180px;
-    max-width: 300px;
+    max-width: 400px;
     display: flex;
     align-items: center;
 }
@@ -25,6 +25,8 @@
     gap: 12px;
     overflow: hidden;
     cursor: pointer;
+    flex: 1;
+    min-width: 0;
 }
 
 .track-cover {
@@ -54,8 +56,9 @@
 .track-detail {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
     overflow: hidden;
+    flex: 1;
     min-width: 0;
 }
 
@@ -72,7 +75,9 @@
 
 .track-name,
 .track-name-clone {
-    font-size: 13px;
+    display: inline-block;
+    flex-shrink: 0;
+    font-size: 14px;
     color: var(--text-h);
     font-weight: 500;
     white-space: nowrap;
@@ -84,7 +89,7 @@
 }
 
 .track-name-inner.scrolling .track-name-clone {
-    display: inline;
+    display: inline-block;
 }
 
 .track-name-inner.scrolling {
@@ -113,22 +118,27 @@
     width: max-content;
 }
 
-.track-artist,
-.track-artist-clone {
-    font-size: 10px;
+.foot-left .track-artist,
+.foot-left .track-artist-clone {
+    display: inline-block;
+    flex-shrink: 0;
+    font-size: 12px;
     color: var(--text);
     opacity: 0.7;
     white-space: nowrap;
     padding-right: 40px;
     transition: opacity 0.2s;
+    max-width: none;
+    text-overflow: clip;
+    overflow: visible;
 }
 
-.track-artist:hover,
-.track-artist-clone:hover {
+.foot-left .track-artist:hover,
+.foot-left .track-artist-clone:hover {
     opacity: 1;
 }
 
-.track-artist-clone {
+.foot-left .track-artist-clone {
     display: none;
 }
 
@@ -142,8 +152,8 @@
     text-decoration: underline;
 }
 
-.track-artist-inner.scrolling .track-artist-clone {
-    display: inline;
+.foot-left .track-artist-inner.scrolling .track-artist-clone {
+    display: inline-block;
 }
 
 .track-artist-inner.scrolling {

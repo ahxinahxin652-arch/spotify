@@ -27,6 +27,12 @@ const parsedArtists = computed(() => {
   }
 })
 
+const footBarArtists = computed(() => {
+  return parsedArtists.value.filter(
+    art => art.role === 'Main Artist' || art.role === 'Featured Artist'
+  )
+})
+
 function goToArtist(artistId) {
   if (artistId) {
     router.push(`/artist/${artistId}`)
@@ -384,28 +390,28 @@ onUnmounted(() => {
           <div class="track-name-wrap" ref="nameWrapRef" :title="player.currentTrack.title || player.currentTrack.name">
             <div class="track-name-inner" :class="{ scrolling: canScrollName }">
               <span class="track-name">{{ player.currentTrack.title || player.currentTrack.name }}</span>
-              <span class="track-name-clone">{{ player.currentTrack.title || player.currentTrack.name }}</span>
+              <span class="track-name track-name-clone">{{ player.currentTrack.title || player.currentTrack.name }}</span>
             </div>
           </div>
           <div class="track-artist-wrap" ref="artistWrapRef" :title="player.currentTrack.artist || '未知作者'">
             <div class="track-artist-inner" :class="{ scrolling: canScrollArtist }">
-              <template v-if="parsedArtists.length > 0">
+              <template v-if="footBarArtists.length > 0">
                 <span class="track-artist">
-                  <span v-for="(art, idx) in parsedArtists" :key="art.id">
+                  <span v-for="(art, idx) in footBarArtists" :key="art.id">
                     <span class="artist-link" @click.stop="goToArtist(art.id)">{{ art.name }}</span>
-                    <span v-if="idx < parsedArtists.length - 1">, </span>
+                    <span v-if="idx < footBarArtists.length - 1">, </span>
                   </span>
                 </span>
-                <span class="track-artist-clone">
-                  <span v-for="(art, idx) in parsedArtists" :key="art.id">
+                <span class="track-artist track-artist-clone">
+                  <span v-for="(art, idx) in footBarArtists" :key="art.id">
                     <span class="artist-link" @click.stop="goToArtist(art.id)">{{ art.name }}</span>
-                    <span v-if="idx < parsedArtists.length - 1">, </span>
+                    <span v-if="idx < footBarArtists.length - 1">, </span>
                   </span>
                 </span>
               </template>
               <template v-else>
                 <span class="track-artist">{{ player.currentTrack.artist || '未知作者' }}</span>
-                <span class="track-artist-clone">{{ player.currentTrack.artist || '未知作者' }}</span>
+                <span class="track-artist track-artist-clone">{{ player.currentTrack.artist || '未知作者' }}</span>
               </template>
             </div>
           </div>
