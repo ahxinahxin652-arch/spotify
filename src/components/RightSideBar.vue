@@ -92,6 +92,16 @@ watch(() => player.currentTrack, () => {
   checkOverflow()
 })
 
+watch(() => sidebarStore.isOpen, (isOpen) => {
+  if (isOpen) {
+    nextTick(() => {
+      checkOverflow()
+      setTimeout(checkOverflow, 150)
+      setTimeout(checkOverflow, 350)
+    })
+  }
+})
+
 onMounted(() => {
   checkOverflow()
   window.addEventListener('resize', checkOverflow)

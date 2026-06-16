@@ -106,15 +106,15 @@ body {
     transition: background 0.15s, transform 0.1s;
 }
 
-.traffic-btn svg path,
-.traffic-btn svg rect {
-    stroke: #ffffff !important;
-    transition: stroke 0.15s;
+.traffic-btn svg {
+    width: 11px;
+    height: 11px;
 }
 
-.traffic-btn:hover svg path,
-.traffic-btn:hover svg rect {
-    stroke: rgba(0, 0, 0, 0.6) !important;
+.traffic-btn svg path,
+.traffic-btn svg rect {
+    stroke: #e0e0e0 !important;
+    transition: stroke 0.15s;
 }
 
 .traffic-btn:last-child {
@@ -122,19 +122,8 @@ body {
 }
 
 .traffic-btn:hover {
+    background: #333333 !important;
     transform: scale(1.1);
-}
-
-.traffic-btn.close:hover {
-    background: #ff5f57;
-}
-
-.traffic-btn.minimize:hover {
-    background: #febc2e;
-}
-
-.traffic-btn.maximize:hover {
-    background: #28c840;
 }
 
 /* ========== 新版导航及搜索栏 (Spotify 风格) ========== */
@@ -149,7 +138,7 @@ body {
 .logo-text {
     font-size: 18px;
     font-weight: 700;
-    color: #ffffff;
+    color: #e0e0e0;
     cursor: pointer;
     -webkit-app-region: no-drag;
     transition: opacity 0.2s;
@@ -180,9 +169,14 @@ body {
     transition: background-color 0.2s, color 0.2s;
 }
 
+.arrow-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
 .arrow-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
-    color: #ffffff;
+    background: #333333;
+    color: #e0e0e0;
 }
 
 .header-center {
@@ -209,9 +203,14 @@ body {
     transition: background-color 0.2s, color 0.2s, transform 0.1s;
 }
 
+.home-circle-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
 .home-circle-btn:hover {
-    background: #2a2a2a;
-    color: #ffffff;
+    background: #333333;
+    color: #e0e0e0;
     transform: scale(1.04);
 }
 
@@ -234,25 +233,27 @@ body {
 }
 
 .search-bar-container:hover {
-    background: #2a2a2a;
+    background: #333333;
     border-color: #535353;
 }
 
 .search-bar-container:focus-within {
-    background: #2a2a2a;
-    border-color: #ffffff;
+    background: #333333;
+    border-color: #e0e0e0;
 }
 
 .search-icon {
     color: #b3b3b3;
     margin-right: 8px;
     flex-shrink: 0;
+    width: 18px;
+    height: 18px;
 }
 
 .search-input {
     background: transparent;
     border: none;
-    color: #ffffff;
+    color: #e0e0e0;
     font-family: var(--font), sans-serif;
     font-size: 13px;
     font-weight: 400;
@@ -278,9 +279,14 @@ body {
     transition: background-color 0.2s, color 0.2s;
 }
 
+.clear-search-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
 .clear-search-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+    color: #e0e0e0;
 }
 
 .header-right {
@@ -298,21 +304,26 @@ body {
     height: 34px;
     border-radius: 50%;
     background: #1f1f1f;
-    color: #ffffff;
+    color: #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
-    border: 2px solid rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(224, 224, 224, 0.7);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
+.user-avatar-btn svg.user-avatar-svg {
+    width: 22px;
+    height: 22px;
+}
+
 .user-avatar-btn:hover {
-    background: #2a2a2a;
-    color: #ffffff;
+    background: #333333;
+    color: #e0e0e0;
     transform: scale(1.05);
-    border-color: #ffffff;
+    border-color: #e0e0e0;
 }
 
 /* ========== Element Plus 下拉菜单暗黑主题自定义 ========== */
