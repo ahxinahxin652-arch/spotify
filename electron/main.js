@@ -244,7 +244,7 @@ function setupWindowControls() {
 
   ipcMain.on('window-move', (event, { x, y }) => {
     if (lyricsWindow && !lyricsWindow.isDestroyed()) {
-      lyricsWindow.setPosition(x, y)
+      lyricsWindow.setPosition(Math.round(x), Math.round(y))
     }
   })
 

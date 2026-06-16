@@ -22,8 +22,8 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   if (isDragging.value && window.electronAPI && window.electronAPI.moveWindow) {
-    const x = e.screenX - dragOffset.x
-    const y = e.screenY - dragOffset.y
+    const x = Math.round(e.screenX - dragOffset.x)
+    const y = Math.round(e.screenY - dragOffset.y)
     window.electronAPI.moveWindow(x, y)
   }
 }
