@@ -1,6 +1,6 @@
 {
   "name": "satisfy",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Satisfy - 解密 + 转换 + 播放",
   "main": "electron/main.js",
   "author": "",
