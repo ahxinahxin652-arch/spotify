@@ -128,41 +128,225 @@ body {
     background: #28c840;
 }
 
-/* ========== 主导航 ========== */
-.main-nav {
+/* ========== 新版导航及搜索栏 (Spotify 风格) ========== */
+.header-left {
     display: flex;
     align-items: center;
-    height: 100%;
-    padding: 0 8px;
-    gap: 2px;
+    gap: 16px;
+    flex: 1 1 30%;
+    min-width: 150px;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: opacity 0.2s;
+}
+
+.logo-text:hover {
+    opacity: 0.8;
+}
+
+.nav-arrows {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     -webkit-app-region: no-drag;
 }
 
-.nav-btn {
+.arrow-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: #b3b3b3;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
+    justify-content: center;
     cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.15s;
-    white-space: nowrap;
+    transition: background-color 0.2s, color 0.2s;
 }
 
-.nav-btn:hover {
-    background: var(--surface-2);
-    color: var(--text-h);
+.arrow-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffffff;
 }
 
-.nav-btn.active {
-    background: var(--accent-dim);
-    color: var(--accent);
+.header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1 1 40%;
+    min-width: 300px;
+    -webkit-app-region: no-drag;
+}
+
+.home-circle-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #1f1f1f;
+    color: #b3b3b3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+}
+
+.home-circle-btn:hover {
+    background: #2a2a2a;
+    color: #ffffff;
+    transform: scale(1.04);
+}
+
+.home-circle-btn.active {
+    color: var(--accent, #1db954);
+}
+
+.search-bar-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #1f1f1f;
+    border-radius: 500px;
+    padding: 0 12px;
+    height: 40px;
+    width: 100%;
+    max-width: 360px;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.search-bar-container:hover {
+    background: #2a2a2a;
+    border-color: #535353;
+}
+
+.search-bar-container:focus-within {
+    background: #2a2a2a;
+    border-color: #ffffff;
+}
+
+.search-icon {
+    color: #b3b3b3;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-family: var(--font), sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    width: 100%;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: #757575;
+}
+
+.clear-search-btn {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-left: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.clear-search-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    flex: 1 1 30%;
+    min-width: 180px;
+    -webkit-app-region: no-drag;
+}
+
+.user-avatar-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #1f1f1f;
+    color: #b3b3b3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar-btn:hover {
+    background: #2a2a2a;
+    color: #ffffff;
+    transform: scale(1.04);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ========== Element Plus 下拉菜单暗黑主题自定义 ========== */
+.el-popper.user-profile-dropdown {
+    background: #282828 !important;
+    border: 1px solid #3e3e3e !important;
+    box-shadow: 0 16px 24px rgba(0, 0, 0, 0.5), 0 6px 8px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 4px !important;
+}
+
+.el-popper.user-profile-dropdown .el-popper__arrow::before {
+    background: #282828 !important;
+    border: 1px solid #3e3e3e !important;
+}
+
+.el-popper.user-profile-dropdown .el-dropdown-menu {
+    background-color: #282828 !important;
+    padding: 4px !important;
+}
+
+.el-popper.user-profile-dropdown .el-dropdown-menu__item {
+    color: #e0e0e0 !important;
+    font-family: var(--font), sans-serif;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    border-radius: 2px !important;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.el-popper.user-profile-dropdown .el-dropdown-menu__item:hover,
+.el-popper.user-profile-dropdown .el-dropdown-menu__item:focus {
+    background-color: #3e3e3e !important;
+    color: #ffffff !important;
+}
+
+.el-popper.user-profile-dropdown .el-dropdown-menu__item--divided {
+    border-top: 1px solid #3e3e3e !important;
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+}
+
+.el-popper.user-profile-dropdown .el-dropdown-menu__item--divided::before {
+    background-color: transparent !important;
 }
 
 /* ========== 侧栏包装（App.vue 中使用，位于主区域右侧）========== */

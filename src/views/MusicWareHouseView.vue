@@ -55,8 +55,25 @@ const MIN_IMG_SIZE = 600
 const MAX_IMG_SIZE = 3000
 const COMPRESS_SIZE = 1000
 
+const handleGlobalSearch = (e) => {
+  const query = e.detail?.query || ''
+  searchQuery.value = query
+  if (query) {
+    showSearch.value = true
+  }
+}
+
 onMounted(async () => {
   await loadTracks()
+  if (window.globalSearchQuery && window.globalSearchQuery.value) {
+    searchQuery.value = window.globalSearchQuery.value
+    showSearch.value = true
+  }
+  window.addEventListener('global-search', handleGlobalSearch)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('global-search', handleGlobalSearch)
 })
 
 async function loadTracks() {

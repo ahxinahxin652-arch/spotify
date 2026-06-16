@@ -531,15 +531,15 @@ const formatPlayCount = (num) => {
 .banner-sharp-img {
   position: absolute;
   top: 0;
-  left: 50%;
   bottom: 0;
-  width: 100%;
-  max-width: 800px;
-  transform: translateX(-50%);
+  left: 10%;
+  right: 10%;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 2;
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 12%, rgba(0, 0, 0, 1) 88%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 12%, rgba(0, 0, 0, 1) 88%, rgba(0, 0, 0, 0) 100%);
 }
 
 .artist-banner::before {
