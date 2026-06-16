@@ -135,16 +135,6 @@ function scrollToCurrent() {
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"
   >
-    <div class="toolbar">
-      <!-- 关闭按钮：让主进程隐藏本窗口 -->
-      <button class="close-btn" @click="closeWindow">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-    
     <div class="lyrics-container" ref="lyricsContainerRef">
       <div v-if="lyrics.length === 0" class="no-lyrics">暂无歌词</div>
       <div 

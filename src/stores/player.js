@@ -26,6 +26,7 @@ export const usePlayerStore = defineStore('player', () => {
   const isMuted = ref(false)             // 是否静音
   const shuffle = ref(false)             // 随机播放
   const repeatMode = ref(RepeatMode.OFF) // 循环模式: off / list / track
+  const currentLyrics = ref('')          // 当前歌词
 
   // 随机播放历史（用于随机模式下的"上一首"功能）
   const shuffleHistory = ref([])
@@ -56,6 +57,7 @@ export const usePlayerStore = defineStore('player', () => {
   // ---- Actions ----
   function setTrack(track, playlist = [], index = -1) {
     currentTrack.value = track
+    currentLyrics.value = ''
     if (playlist.length > 0) {
       currentPlaylist.value = playlist
       currentIndex.value = index
@@ -313,6 +315,10 @@ export const usePlayerStore = defineStore('player', () => {
     return { action: 'play', track: list[currentIndex.value], index: currentIndex.value }
   }
 
+  function setCurrentLyrics(val) {
+    currentLyrics.value = val || ''
+  }
+
   function reset() {
     currentTrack.value = null
     currentPlaylist.value = []
@@ -321,6 +327,7 @@ export const usePlayerStore = defineStore('player', () => {
     progress.value = 0
     currentTime.value = 0
     duration.value = 0
+    currentLyrics.value = ''
     shuffleHistory.value = []
     shuffleHistoryIndex.value = -1
   }
@@ -338,6 +345,7 @@ export const usePlayerStore = defineStore('player', () => {
     isMuted,
     shuffle,
     repeatMode,
+    currentLyrics,
     // 计算属性
     hasPrev,
     hasNext,
@@ -357,5 +365,6 @@ export const usePlayerStore = defineStore('player', () => {
     playPrev,
     removeTrack,
     reset,
+    setCurrentLyrics,
   }
 })

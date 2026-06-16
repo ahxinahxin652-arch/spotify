@@ -32,48 +32,12 @@ html, body {
 }
 
 
-.toolbar {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  opacity: 0; /* 默认隐藏 */
-  transition: opacity 0.3s ease;
-  /* 按钮区域不可拖拽窗口 */
-  -webkit-app-region: no-drag;
-}
 
-.lyrics-widget:hover .toolbar {
-  opacity: 1; /* 悬停时显示 */
-}
-
-.close-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: #fff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  opacity: 0.8;
-  transition: opacity 0.2s, background 0.2s;
-}
-.close-btn:hover {
-  opacity: 1;
-  background: rgba(255, 70, 70, 0.8);
-}
 
 .lyrics-container {
   flex: 1;
   overflow-y: hidden;
-  padding: 10px 0;
+  padding: 4px 0;
   text-align: center;
   mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
@@ -90,16 +54,22 @@ html, body {
 
 .lyric-line {
   font-size: 16px;
-  line-height: 2;
+  line-height: 1.4;
   color: rgba(255, 255, 255, 0.25);
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  min-height: 36px;
+  min-height: 24px;
   transform: scale(0.9);
   opacity: 0.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 16px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 4px 16px;
+}
+
+.lyric-line:hover {
+  text-decoration: underline;
+  color: rgba(255, 255, 255, 0.95) !important;
+  opacity: 0.95 !important;
 }
 
 .lyric-line.prev-1,

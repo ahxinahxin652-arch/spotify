@@ -40,6 +40,11 @@ const routes = [
     path: '/artist/:id',
     name: 'ArtistDetail',
     component: () => import('../views/ArtistDetailView.vue'),
+  },
+  {
+    path: '/lyrics',
+    name: 'MainLyrics',
+    component: () => import('../views/MainLyricsView.vue'),
   }
 ]
 

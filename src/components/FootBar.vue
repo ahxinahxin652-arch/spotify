@@ -80,9 +80,20 @@ watch(() => player.currentTrack, () => {
   checkOverflow()
 })
 
+function handleSeekTrack(e) {
+  const seekTime = e.detail?.time
+  if (typeof seekTime === 'number') {
+    if (howl && player.duration) {
+      howl.seek(seekTime)
+      player.setCurrentTime(seekTime)
+    }
+  }
+}
+
 onMounted(() => {
   checkOverflow()
   window.addEventListener('resize', refreshOverflow)
+  window.addEventListener('seek-track', handleSeekTrack)
   
   // 监听歌词悬浮窗状态
   if (window.electronAPI && window.electronAPI.onLyricsWindowStateChange) {
@@ -90,6 +101,11 @@ onMounted(() => {
       isLyricsOpen.value = isOpen
     })
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', refreshOverflow)
+  window.removeEventListener('seek-track', handleSeekTrack)
 })
 
 // ========== emit ==========
@@ -102,6 +118,16 @@ function handleToggleSidebar() {
 function handleToggleLyrics() {
   if (window.electronAPI && window.electronAPI.toggleLyricsWindow) {
     window.electronAPI.toggleLyricsWindow()
+  }
+}
+
+const isMainLyricsRoute = computed(() => router.currentRoute.value.path === '/lyrics')
+
+function toggleMainLyrics() {
+  if (isMainLyricsRoute.value) {
+    router.push('/')
+  } else {
+    router.push('/lyrics')
   }
 }
 
@@ -187,9 +213,11 @@ async function playTrack(track, playlist = [], index = -1) {
   
   // 异步获取歌词信息并推送给悬浮窗
   currentLyrics = ''
+  player.setCurrentLyrics('')
   window.electronAPI.getFileMetadata(currentTrack.path).then(res => {
     if (res.success && res.data) {
       currentLyrics = res.data.lyrics || ''
+      player.setCurrentLyrics(currentLyrics)
       if (window.electronAPI.sendLyricsStatus) {
         window.electronAPI.sendLyricsStatus({
           lyrics: currentLyrics,
@@ -518,6 +546,19 @@ onUnmounted(() => {
 
     <!-- 右侧：音量 + 侧栏开关 -->
     <div class="foot-right">
+      <button
+        class="ctrl-btn main-lyrics-btn"
+        :class="{ active: isMainLyricsRoute }"
+        @click="toggleMainLyrics"
+        title="歌词"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
+
       <button
         class="ctrl-btn lyrics-btn"
         :class="{ active: isLyricsOpen }"

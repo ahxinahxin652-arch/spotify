@@ -131,7 +131,7 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
-    flex: 1 1 30%;
+    flex: 0 0 auto;
     min-width: 150px;
 }
 
@@ -184,9 +184,8 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    flex: 1 1 40%;
+    flex: 0 0 auto;
     min-width: 300px;
-    -webkit-app-region: no-drag;
 }
 
 .home-circle-btn {
@@ -201,6 +200,7 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    -webkit-app-region: no-drag;
 }
 
 .home-circle-btn svg {
@@ -230,6 +230,7 @@ body {
     max-width: 360px;
     border: 1px solid transparent;
     transition: background-color 0.2s, border-color 0.2s;
+    -webkit-app-region: no-drag;
 }
 
 .search-bar-container:hover {
@@ -294,9 +295,8 @@ body {
     align-items: center;
     justify-content: flex-end;
     gap: 16px;
-    flex: 1 1 30%;
+    flex: 0 0 auto;
     min-width: 180px;
-    -webkit-app-region: no-drag;
 }
 
 .user-avatar-btn {
@@ -312,6 +312,7 @@ body {
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
     border: 2px solid rgba(224, 224, 224, 0.7);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    -webkit-app-region: no-drag;
 }
 
 .user-avatar-btn svg.user-avatar-svg {
