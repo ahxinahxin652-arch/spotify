@@ -99,11 +99,17 @@ async function autoMigrate() {
     )
   `)
 
-  // 尝试添加新字段 cover (处理旧版本数据库)
-  try {
-    await db.$executeRawUnsafe(`ALTER TABLE "tracks" ADD COLUMN "cover" TEXT`)
-  } catch (e) {
-    // 列已经存在时会报错，忽略此错误
+  // 检查 tracks 表的现有字段，防止 ALTER TABLE 重复添加列时产生 Prisma 内部错误日志
+  const columns = await db.$queryRawUnsafe(`PRAGMA table_info("tracks")`)
+  const hasCover = columns.some(c => c.name === 'cover')
+  const hasArtists = columns.some(c => c.name === 'artists')
+
+  if (!hasCover) {
+    try {
+      await db.$executeRawUnsafe(`ALTER TABLE "tracks" ADD COLUMN "cover" TEXT`)
+    } catch (e) {
+      // 回退忽略
+    }
   }
 
   await db.$executeRawUnsafe(`
@@ -127,12 +133,13 @@ async function autoMigrate() {
     CREATE UNIQUE INDEX IF NOT EXISTS "artists_name_key" ON "artists"("name")
   `)
 
-  // Add artists column to tracks table
-  try {
-    await db.$executeRawUnsafe(`ALTER TABLE "tracks" ADD COLUMN "artists" TEXT`)
-  } catch (e) {
-    if (!e.message || !e.message.includes('duplicate column name')) {
-      console.warn('[DB Warning] Failed to add artists column to tracks:', e.message)
+  if (!hasArtists) {
+    try {
+      await db.$executeRawUnsafe(`ALTER TABLE "tracks" ADD COLUMN "artists" TEXT`)
+    } catch (e) {
+      if (!e.message || !e.message.includes('duplicate column name')) {
+        console.warn('[DB Warning] Failed to add artists column to tracks:', e.message)
+      }
     }
   }
 
