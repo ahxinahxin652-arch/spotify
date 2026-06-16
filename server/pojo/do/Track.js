@@ -26,6 +26,7 @@ class Track {
     id, libraryId = '', name, title = '', artist = '', album = '',
     cover = '', duration = 0, path, format = '', size = 0, modified = 0,
     isEncrypted = false, warehouse = '', warehouseId = '', createdAt, updatedAt,
+    artists = '[]',
   }) {
     this.id = id
     this.libraryId = libraryId
@@ -44,6 +45,7 @@ class Track {
     this.warehouseId = warehouseId
     this.createdAt = createdAt || new Date().toISOString()
     this.updatedAt = updatedAt || new Date().toISOString()
+    this.artists = artists
   }
 
   /**

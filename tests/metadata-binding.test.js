@@ -30,6 +30,8 @@ function cleanupDbFiles() {
   try {
     if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
     if (fs.existsSync(testDbJournalPath)) fs.unlinkSync(testDbJournalPath);
+    const dummyFile = path.join(__dirname, 'dummy_test.mp3');
+    if (fs.existsSync(dummyFile)) fs.unlinkSync(dummyFile);
   } catch (e) {
     console.warn('cleanup failed:', e.message);
   }
@@ -56,12 +58,15 @@ async function runTest() {
     
     // Create track initially
     const trackId = 'test-track-binding';
+    const dummyFile = path.join(__dirname, 'dummy_test.mp3');
+    fs.writeFileSync(dummyFile, 'dummy content');
+
     await db.track.create({
       data: {
         id: trackId,
         libraryId: library.id,
         name: 'test.mp3',
-        path: 'dummy/test.mp3',
+        path: dummyFile,
         format: 'mp3',
         artist: 'Jay Chou', // Initial artist name
       }
@@ -114,6 +119,43 @@ async function runTest() {
     // Verify IDs in JSON match database IDs
     if (boundArtists[0].id !== artist1.id || boundArtists[1].id !== artist2.id) {
       console.error('FAIL: JSON artist IDs do not match database artist IDs', boundArtists, artist1, artist2);
+      exitCode = 1;
+      return;
+    }
+
+    // 6. Verify resolveTrackById returns artists field
+    const resolvedResult = await musicDao.resolveTrackById(trackId);
+    if (!resolvedResult.success || !resolvedResult.track || !resolvedResult.track.artists) {
+      console.error('FAIL: resolveTrackById did not return artists field', resolvedResult);
+      exitCode = 1;
+      return;
+    }
+
+    const resolvedArtists = JSON.parse(resolvedResult.track.artists);
+    if (resolvedArtists.length !== 2 || resolvedArtists[0].name !== 'Jay Chou') {
+      console.error('FAIL: resolveTrackById artists content incorrect', resolvedResult.track.artists);
+      exitCode = 1;
+      return;
+    }
+
+    // 7. Verify getWarehouseTracksById returns artists field in Track instance
+    const warehouseTracksResult = await musicDao.getWarehouseTracksById(library.id);
+    if (!warehouseTracksResult.success || !warehouseTracksResult.tracks || warehouseTracksResult.tracks.length === 0) {
+      console.error('FAIL: getWarehouseTracksById failed', warehouseTracksResult);
+      exitCode = 1;
+      return;
+    }
+
+    const trackInstance = warehouseTracksResult.tracks[0];
+    if (!trackInstance.artists) {
+      console.error('FAIL: Track instance from getWarehouseTracksById does not contain artists', trackInstance);
+      exitCode = 1;
+      return;
+    }
+
+    const trackInstanceArtists = JSON.parse(trackInstance.artists);
+    if (trackInstanceArtists.length !== 2 || trackInstanceArtists[0].name !== 'Jay Chou') {
+      console.error('FAIL: Track instance artists content incorrect', trackInstance.artists);
       exitCode = 1;
       return;
     }

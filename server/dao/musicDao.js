@@ -418,6 +418,7 @@ async function resolveTrackById(trackId) {
                 warehouseId: track.libraryId,
                 createdAt: track.createdAt,
                 updatedAt: track.updatedAt,
+                artists: track.artists || '[]',
             },
         }
     } catch (err) {
@@ -470,6 +471,7 @@ async function getWarehouseTracksById(libraryId) {
                     warehouseId: library.id,
                     createdAt: track.createdAt,
                     updatedAt: track.updatedAt,
+                    artists: track.artists || '[]',
                 }))
             } else {
                 console.warn(`[DB Sync] Track "${track.name}" file not found at "${track.path}", removing from database`)
