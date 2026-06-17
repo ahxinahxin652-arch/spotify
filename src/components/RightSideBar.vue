@@ -144,13 +144,31 @@ const trackInfo = () => {
     artist: player.currentTrack.artist || ''
   }
 }
+
+const isMainOrFeatured = (role) => {
+  const r = (role || '').trim().toLowerCase()
+  return r === 'main artist' || r === 'featured artist'
+}
+
+const handleArtistClick = (art) => {
+  if (isMainOrFeatured(art.role)) {
+    goToArtist(art.id)
+    closeModal()
+  }
+}
+
+const handleCardArtistClick = (art) => {
+  if (isMainOrFeatured(art.role)) {
+    goToArtist(art.id)
+  }
+}
 </script>
 
 <template>
   <div class="right-sidebar">
     <!-- 头部：标题 + 关闭按钮 -->
     <div class="sidebar-header">
-      <span class="sidebar-title">正在播放</span>
+      <span class="sidebar-title">{{ player.currentTrack?.warehouse || '正在播放' }}</span>
       <button class="btn-sidebar-close" @click="closeSidebar" title="关闭">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="15 18 9 12 15 6"/>
@@ -220,7 +238,11 @@ const trackInfo = () => {
             class="credits-card-item"
           >
             <div class="credits-card-item-info">
-              <span class="credits-card-artist-name" @click.stop="goToArtist(art.id)">{{ art.name }}</span>
+              <span 
+                class="credits-card-artist-name" 
+                :class="{ clickable: isMainOrFeatured(art.role) }"
+                @click.stop="handleCardArtistClick(art)"
+              >{{ art.name }}</span>
               <span class="credits-card-artist-role">{{ art.role }}</span>
             </div>
             <button 
@@ -279,7 +301,11 @@ const trackInfo = () => {
                   class="credits-modal-item"
                 >
                   <div class="credits-modal-item-info">
-                    <span class="credits-modal-artist-name" @click.stop="goToArtist(art.id); closeModal()">{{ art.name }}</span>
+                    <span 
+                      class="credits-modal-artist-name" 
+                      :class="{ clickable: isMainOrFeatured(art.role) }"
+                      @click.stop="handleArtistClick(art)"
+                    >{{ art.name }}</span>
                     <span class="credits-modal-artist-role">{{ art.role }}</span>
                   </div>
                   <button 

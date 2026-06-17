@@ -273,13 +273,16 @@
     font-size: 14px;
     font-weight: 600;
     color: #ffffff;
-    cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.credits-card-artist-name:hover {
+.credits-card-artist-name.clickable {
+    cursor: pointer;
+}
+
+.credits-card-artist-name.clickable:hover {
     text-decoration: underline;
 }
 
@@ -452,10 +455,13 @@
     font-size: 15px;
     font-weight: 600;
     color: #ffffff;
+}
+
+.credits-modal-artist-name.clickable {
     cursor: pointer;
 }
 
-.credits-modal-artist-name:hover {
+.credits-modal-artist-name.clickable:hover {
     text-decoration: underline;
 }
 
