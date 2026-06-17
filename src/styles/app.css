@@ -167,6 +167,7 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
+    flex-shrink: 0;
 }
 
 .arrow-btn svg {
@@ -174,9 +175,16 @@ body {
     height: 18px;
 }
 
-.arrow-btn:hover {
+.arrow-btn:not(:disabled):hover {
     background: #333333;
     color: #e0e0e0;
+}
+
+.arrow-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.4);
+    color: #555555;
 }
 
 .header-center {
@@ -201,6 +209,7 @@ body {
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s, transform 0.1s;
     -webkit-app-region: no-drag;
+    flex-shrink: 0;
 }
 
 .home-circle-btn svg {

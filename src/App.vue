@@ -1,6 +1,6 @@
 <script setup>
 // todo 假设现在播放的音乐库就一首歌曲，但是增加了20首，但是无法切换下一首（内存tracks未更新）
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSidebarStore } from './stores/sidebar'
 import { useLocalStorageStore } from './stores/localStorage'
@@ -14,6 +14,17 @@ const localStorageStore = useLocalStorageStore()
 const isMaximized = ref(false)
 const sidebarTransition = ref(null)
 
+const canBack = ref(false)
+const canForward = ref(false)
+
+const updateNavButtons = () => {
+  nextTick(() => {
+    const state = window.history.state
+    canBack.value = state && state.back !== null
+    canForward.value = state && state.forward !== null
+  })
+}
+
 onMounted(() => {
   window.electronAPI.onWindowMaximized((val) => {
     isMaximized.value = val
@@ -21,6 +32,9 @@ onMounted(() => {
 
   // 根据 localStorage 恢复右侧边栏状态
   sidebarStore.setOpen(localStorageStore.isRightBarShow)
+  
+  // 初始化导航按钮状态
+  updateNavButtons()
 })
 
 function handleMinimize() {
@@ -38,15 +52,21 @@ function handleClose() {
 const currentRoute = ref(router.currentRoute.value.name)
 router.afterEach((to) => {
   currentRoute.value = to.name
+  updateNavButtons()
 })
 
 // 导航控制
 function goBack() {
-  router.back()
+  if (canBack.value) {
+    router.back()
+  }
 }
 
+// 前进导航
 function goForward() {
-  router.forward()
+  if (canForward.value) {
+    router.forward()
+  }
 }
 
 // 搜索逻辑
@@ -115,15 +135,15 @@ function onSidebarAfterLeave() {
     <header class="titlebar" @dblclick="handleMaximize">
       <!-- Left: Logo & Navigation arrows -->
       <div class="header-left">
-        <span class="logo-text" @click="goHome">Satisfy</span>
+        <span class="logo-text" @click="goHome">Auramix</span>
         <div class="nav-arrows">
-          <button class="arrow-btn" @click="goBack" title="返回">
+          <button class="arrow-btn" @click="goBack" :disabled="!canBack" title="返回">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
           </button>
-          <button class="arrow-btn" @click="goForward" title="前进">
+          <button class="arrow-btn" @click="goForward" :disabled="!canForward" title="前进">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>

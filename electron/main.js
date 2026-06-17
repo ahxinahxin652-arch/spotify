@@ -53,11 +53,11 @@ function createTray() {
   icon.setTemplateImage(true)
 
   tray = new Tray(icon)
-  tray.setToolTip('Satisfy')
+  tray.setToolTip('Auramix')
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'open Satisfy',
+      label: 'open Auramix',
       click: () => {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.show()
