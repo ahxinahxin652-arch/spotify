@@ -1,7 +1,7 @@
 {
-  "name": "satisfy",
-  "version": "1.0.18",
-  "description": "Satisfy - 解密 + 转换 + 播放",
+  "name": "auramix",
+  "version": "1.0.19",
+  "description": "Auramix - 沉浸式音乐流媒体播放器",
   "main": "electron/main.js",
   "author": "",
   "license": "MIT",
@@ -35,8 +35,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.satisfy.app",
-    "productName": "Satisfy",
+    "appId": "com.auramix.app",
+    "productName": "Auramix",
     "directories": {
       "output": "release"
     },
@@ -57,7 +57,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Satisfy"
+      "shortcutName": "Auramix"
     }
   }
 }
